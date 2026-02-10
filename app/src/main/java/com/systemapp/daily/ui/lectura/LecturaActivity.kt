@@ -159,8 +159,8 @@ class LecturaActivity : AppCompatActivity() {
     }
 
     private fun verificarPermisoLectura() {
-        val token = sessionManager.token ?: return
-        viewModel.checkPuedeLeer(token, macroId)
+        val apiToken = sessionManager.apiToken ?: return
+        viewModel.checkPuedeLeer(apiToken, macroId)
     }
 
     private fun verificarPermisoYCapturar() {
@@ -238,9 +238,9 @@ class LecturaActivity : AppCompatActivity() {
             .setTitle("Confirmar lectura")
             .setMessage("Macro: $macroCodigo\nValor: $valorLectura\nFotos: ${viewModel.getCantidadFotos()}\n\n¿Enviar lectura?")
             .setPositiveButton("Enviar") { _, _ ->
-                val token = sessionManager.token ?: return@setPositiveButton
+                val apiToken = sessionManager.apiToken ?: return@setPositiveButton
                 viewModel.enviarLectura(
-                    token = token,
+                    token = apiToken,
                     macroId = macroId,
                     valorLectura = valorLectura,
                     observacion = observacion.ifEmpty { null }

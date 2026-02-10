@@ -1,25 +1,29 @@
 package com.systemapp.daily.data.repository
 
 import com.systemapp.daily.data.api.RetrofitClient
-import com.systemapp.daily.data.model.Macro
+import com.systemapp.daily.data.model.Medidor
 import com.systemapp.daily.utils.NetworkResult
 
 /**
- * Repositorio para operaciones con macromedidores.
+ * Repositorio para operaciones con medidores.
  */
 class MacroRepository {
 
     private val api = RetrofitClient.apiService
 
-    suspend fun getMacros(token: String): NetworkResult<List<Macro>> {
+    /**
+     * Obtiene los medidores del usuario usando el endpoint existente /medidoresout.
+     * Se pasa el nombre de usuario (no el api_token).
+     */
+    suspend fun getMedidores(usuario: String): NetworkResult<List<Medidor>> {
         return try {
-            val response = api.getMacros("Bearer $token")
+            val response = api.getMedidores(usuario)
             if (response.isSuccessful) {
                 val body = response.body()
-                if (body != null && body.success) {
-                    NetworkResult.Success(body.data ?: emptyList())
+                if (!body.isNullOrEmpty()) {
+                    NetworkResult.Success(body)
                 } else {
-                    NetworkResult.Error(body?.message ?: "Error al obtener macromedidores")
+                    NetworkResult.Success(emptyList())
                 }
             } else {
                 NetworkResult.Error("Error del servidor: ${response.code()}", response.code())

@@ -10,68 +10,66 @@ import retrofit2.http.*
  * Definición de endpoints de la API.
  *
  * Endpoints existentes:
- *   - loginMovil1: Login del usuario (ya existe en tu Laravel)
+ *   - loginMovil1: Login del usuario
+ *   - medidoresout: Listar medidores asignados al usuario
  *
  * Endpoints nuevos que debes crear en Laravel:
- *   - macrosMovil: Listar macromedidores asignados al usuario
  *   - lecturasMovil/check: Verificar si puede tomar lectura hoy
  *   - lecturasMovil: Enviar una lectura con fotos
  */
 interface ApiService {
 
     // =============================================
-    // LOGIN - Endpoint existente en tu API
+    // LOGIN - Endpoint existente
     // =============================================
 
     /**
      * Login del usuario.
-     * Endpoint existente: loginMovil1
-     * Parámetros por query: usuario, password
+     * Retorna un array JSON: [ { id, usuario, nombre, api_token, ... } ]
      */
     @GET("loginMovil1")
     suspend fun login(
         @Query("usuario") usuario: String,
         @Query("password") password: String
-    ): Response<LoginResponse>
+    ): Response<List<UserLogin>>
 
     // =============================================
-    // MACROMEDIDORES - Endpoints nuevos
+    // MEDIDORES - Endpoint existente
     // =============================================
 
     /**
-     * Obtener lista de macromedidores asignados al usuario.
-     * NUEVO: Debes crear este endpoint en Laravel.
+     * Obtener lista de medidores asignados al usuario.
+     * Endpoint existente: /medidoresout?usuario=xxx
+     * Retorna array JSON con los medidores.
      */
-    @GET("macrosMovil")
-    suspend fun getMacros(
-        @Header("Authorization") token: String
-    ): Response<MacroListResponse>
+    @GET("medidoresout")
+    suspend fun getMedidores(
+        @Query("usuario") usuario: String
+    ): Response<List<Medidor>>
 
     // =============================================
     // LECTURAS - Endpoints nuevos
     // =============================================
 
     /**
-     * Verificar si el usuario puede tomar lectura de un macro hoy.
-     * Retorna cuántas lecturas ha hecho hoy y si está autorizado para más.
+     * Verificar si el usuario puede tomar lectura de un medidor hoy.
      * NUEVO: Debes crear este endpoint en Laravel.
      */
     @GET("lecturasMovil/check")
     suspend fun checkLectura(
-        @Header("Authorization") token: String,
-        @Query("macro_id") macroId: Int
+        @Query("api_token") apiToken: String,
+        @Query("medidor_id") medidorId: Int
     ): Response<CheckLecturaResponse>
 
     /**
      * Enviar una lectura con fotos (multipart).
-     * Las fotos se envían como archivos adjuntos.
      * NUEVO: Debes crear este endpoint en Laravel.
      */
     @Multipart
     @POST("lecturasMovil")
     suspend fun enviarLectura(
-        @Header("Authorization") token: String,
-        @Part("macro_id") macroId: RequestBody,
+        @Part("api_token") apiToken: RequestBody,
+        @Part("medidor_id") medidorId: RequestBody,
         @Part("valor_lectura") valorLectura: RequestBody,
         @Part("observacion") observacion: RequestBody?,
         @Part fotos: List<MultipartBody.Part>

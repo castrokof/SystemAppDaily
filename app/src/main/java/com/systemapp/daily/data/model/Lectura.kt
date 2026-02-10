@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
 
 /**
- * Representa una lectura de un macromedidor.
+ * Representa una lectura de un medidor.
  * También se usa como entidad Room para almacenamiento local.
  */
 @Entity(tableName = "lecturas")
@@ -13,7 +13,7 @@ data class Lectura(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
-    @SerializedName("macro_id")
+    @SerializedName("medidor_id")
     val macroId: Int,
 
     @SerializedName("valor_lectura")

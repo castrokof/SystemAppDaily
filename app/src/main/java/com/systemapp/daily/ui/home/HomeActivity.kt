@@ -8,7 +8,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.systemapp.daily.data.model.Macro
+import com.systemapp.daily.data.model.Medidor
 import com.systemapp.daily.databinding.ActivityHomeBinding
 import com.systemapp.daily.ui.lectura.LecturaActivity
 import com.systemapp.daily.ui.login.LoginActivity
@@ -34,29 +34,18 @@ class HomeActivity : AppCompatActivity() {
         setupRecyclerView()
         setupSwipeRefresh()
         observeViewModel()
-        cargarMacros()
+        cargarMedidores()
     }
 
     override fun onResume() {
         super.onResume()
-        // Recargar al volver de la pantalla de lectura
-        cargarMacros()
+        cargarMedidores()
     }
 
     private fun setupToolbar() {
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.title = "Macromedidores"
+        supportActionBar?.title = "Medidores"
         supportActionBar?.subtitle = "Bienvenido, ${sessionManager.userName}"
-
-        binding.toolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                android.R.id.home -> {
-                    confirmarLogout()
-                    true
-                }
-                else -> false
-            }
-        }
 
         binding.btnLogout.setOnClickListener {
             confirmarLogout()
@@ -64,8 +53,8 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        macroAdapter = MacroAdapter { macro ->
-            onMacroSelected(macro)
+        macroAdapter = MacroAdapter { medidor ->
+            onMedidorSelected(medidor)
         }
         binding.rvMacros.apply {
             layoutManager = LinearLayoutManager(this@HomeActivity)
@@ -75,21 +64,21 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupSwipeRefresh() {
         binding.swipeRefresh.setOnRefreshListener {
-            cargarMacros()
+            cargarMedidores()
         }
     }
 
-    private fun cargarMacros() {
-        val token = sessionManager.token
-        if (token != null) {
-            viewModel.cargarMacros(token)
+    private fun cargarMedidores() {
+        val usuario = sessionManager.userUsuario
+        if (usuario != null) {
+            viewModel.cargarMedidores(usuario)
         } else {
             navigateToLogin()
         }
     }
 
     private fun observeViewModel() {
-        viewModel.macros.observe(this) { result ->
+        viewModel.medidores.observe(this) { result ->
             binding.swipeRefresh.isRefreshing = false
             when (result) {
                 is NetworkResult.Loading -> {
@@ -98,14 +87,14 @@ class HomeActivity : AppCompatActivity() {
                 }
                 is NetworkResult.Success -> {
                     binding.progressBar.visibility = View.GONE
-                    val macros = result.data
-                    if (macros.isEmpty()) {
+                    val medidores = result.data
+                    if (medidores.isEmpty()) {
                         binding.tvEmpty.visibility = View.VISIBLE
                         binding.rvMacros.visibility = View.GONE
                     } else {
                         binding.tvEmpty.visibility = View.GONE
                         binding.rvMacros.visibility = View.VISIBLE
-                        macroAdapter.submitList(macros)
+                        macroAdapter.submitList(medidores)
                     }
                 }
                 is NetworkResult.Error -> {
@@ -121,21 +110,11 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun onMacroSelected(macro: Macro) {
-        val puedeLeer = macro.lecturasHoy < Constants.MAX_LECTURAS_POR_DIA || macro.lecturaAutorizada
-        if (!puedeLeer) {
-            Toast.makeText(
-                this,
-                "Ya alcanzaste el límite de ${Constants.MAX_LECTURAS_POR_DIA} lecturas hoy para este macro. Solicita autorización desde la web.",
-                Toast.LENGTH_LONG
-            ).show()
-            return
-        }
-
+    private fun onMedidorSelected(medidor: Medidor) {
         val intent = Intent(this, LecturaActivity::class.java).apply {
-            putExtra(Constants.EXTRA_MACRO_ID, macro.id)
-            putExtra(Constants.EXTRA_MACRO_NOMBRE, macro.nombre)
-            putExtra(Constants.EXTRA_MACRO_CODIGO, macro.codigo)
+            putExtra(Constants.EXTRA_MACRO_ID, medidor.id)
+            putExtra(Constants.EXTRA_MACRO_NOMBRE, medidor.nombreCompleto)
+            putExtra(Constants.EXTRA_MACRO_CODIGO, medidor.refMedidor)
         }
         startActivity(intent)
     }

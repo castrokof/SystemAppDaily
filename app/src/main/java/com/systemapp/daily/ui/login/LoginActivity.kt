@@ -65,17 +65,20 @@ class LoginActivity : AppCompatActivity() {
                     binding.progressBar.visibility = View.GONE
                     binding.btnLogin.isEnabled = true
 
-                    val data = result.data
-                    if (data.token != null && data.user != null) {
+                    val user = result.data
+                    if (user.apiToken != null) {
                         sessionManager.saveLoginData(
-                            token = data.token,
-                            userId = data.user.id,
-                            userName = data.user.nombre,
-                            email = data.user.email
+                            apiToken = user.apiToken,
+                            userId = user.id,
+                            nombre = user.nombre,
+                            usuario = user.usuario,
+                            email = user.email,
+                            empresa = user.empresa
                         )
+                        Toast.makeText(this, "Bienvenido, ${user.nombre}", Toast.LENGTH_SHORT).show()
                         navigateToHome()
                     } else {
-                        Toast.makeText(this, "Respuesta incompleta del servidor", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Error: el servidor no devolvió un token", Toast.LENGTH_SHORT).show()
                     }
                 }
                 is NetworkResult.Error -> {

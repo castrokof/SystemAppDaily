@@ -30,9 +30,9 @@ class LecturaRepository(context: Context) {
      * Verifica si el usuario puede tomar lectura de un macro hoy.
      * Primero intenta verificar con la API, si falla usa datos locales.
      */
-    suspend fun checkPuedeLeer(token: String, macroId: Int): NetworkResult<CheckLecturaResponse> {
+    suspend fun checkPuedeLeer(apiToken: String, macroId: Int): NetworkResult<CheckLecturaResponse> {
         return try {
-            val response = api.checkLectura("Bearer $token", macroId)
+            val response = api.checkLectura(apiToken, macroId)
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null) {
@@ -63,13 +63,14 @@ class LecturaRepository(context: Context) {
      * Envía una lectura con fotos al servidor.
      */
     suspend fun enviarLectura(
-        token: String,
+        apiToken: String,
         macroId: Int,
         valorLectura: String,
         observacion: String?,
         fotoPaths: List<String>
     ): NetworkResult<LecturaResponse> {
         return try {
+            val tokenBody = apiToken.toRequestBody("text/plain".toMediaTypeOrNull())
             val macroIdBody = macroId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
             val valorBody = valorLectura.toRequestBody("text/plain".toMediaTypeOrNull())
             val obsBody = observacion?.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -81,7 +82,7 @@ class LecturaRepository(context: Context) {
             }
 
             val response = api.enviarLectura(
-                token = "Bearer $token",
+                apiToken = tokenBody,
                 macroId = macroIdBody,
                 valorLectura = valorBody,
                 observacion = obsBody,

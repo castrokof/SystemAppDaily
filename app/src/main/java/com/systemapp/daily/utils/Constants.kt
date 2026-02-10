@@ -12,10 +12,12 @@ object Constants {
 
     // Keys para SharedPreferences
     const val PREF_NAME = "system_app_daily_prefs"
-    const val PREF_TOKEN = "auth_token"
+    const val PREF_API_TOKEN = "api_token"
     const val PREF_USER_ID = "user_id"
     const val PREF_USER_NAME = "user_name"
+    const val PREF_USER_USUARIO = "user_usuario"
     const val PREF_USER_EMAIL = "user_email"
+    const val PREF_USER_EMPRESA = "user_empresa"
     const val PREF_IS_LOGGED_IN = "is_logged_in"
 
     // Intent extras

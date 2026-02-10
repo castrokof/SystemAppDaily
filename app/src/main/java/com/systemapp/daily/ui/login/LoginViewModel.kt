@@ -4,7 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.systemapp.daily.data.model.LoginResponse
+import com.systemapp.daily.data.model.UserLogin
 import com.systemapp.daily.data.repository.AuthRepository
 import com.systemapp.daily.utils.NetworkResult
 import kotlinx.coroutines.launch
@@ -13,8 +13,8 @@ class LoginViewModel : ViewModel() {
 
     private val repository = AuthRepository()
 
-    private val _loginResult = MutableLiveData<NetworkResult<LoginResponse>>()
-    val loginResult: LiveData<NetworkResult<LoginResponse>> = _loginResult
+    private val _loginResult = MutableLiveData<NetworkResult<UserLogin>>()
+    val loginResult: LiveData<NetworkResult<UserLogin>> = _loginResult
 
     fun login(usuario: String, password: String) {
         if (usuario.isBlank() || password.isBlank()) {

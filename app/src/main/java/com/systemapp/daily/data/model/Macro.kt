@@ -3,44 +3,64 @@ package com.systemapp.daily.data.model
 import com.google.gson.annotations.SerializedName
 
 /**
- * Representa un macromedidor asignado al usuario.
+ * Representa un medidor asignado al usuario.
+ * Mapea exactamente la respuesta de /medidoresout?usuario=xxx
  */
-data class Macro(
+data class Medidor(
     @SerializedName("id")
     val id: Int,
 
-    @SerializedName("codigo")
-    val codigo: String,
+    @SerializedName("Ciclo")
+    val ciclo: Int?,
 
-    @SerializedName("nombre")
-    val nombre: String,
+    @SerializedName("Periodo")
+    val periodo: Int?,
 
-    @SerializedName("direccion")
+    @SerializedName("Ref_Medidor")
+    val refMedidor: String,
+
+    @SerializedName("Direccion")
     val direccion: String?,
 
-    @SerializedName("descripcion")
-    val descripcion: String?,
+    @SerializedName("Nombre")
+    val nombre: String,
 
-    @SerializedName("estado")
-    val estado: String?,
+    @SerializedName("Apell")
+    val apellido: String?,
 
-    @SerializedName("ultima_lectura")
-    val ultimaLectura: String?,
+    @SerializedName("LA")
+    val lecturaAnterior: Int?,
 
-    @SerializedName("lecturas_hoy")
-    val lecturasHoy: Int = 0,
+    @SerializedName("Promedio")
+    val promedio: Int?,
 
-    @SerializedName("lectura_autorizada")
-    val lecturaAutorizada: Boolean = false
-)
+    @SerializedName("Año")
+    val anio: Int?,
 
-data class MacroListResponse(
-    @SerializedName("success")
-    val success: Boolean,
+    @SerializedName("id_Ruta")
+    val idRuta: Int?,
 
-    @SerializedName("message")
-    val message: String?,
+    @SerializedName("Ruta")
+    val ruta: String?,
 
-    @SerializedName("data")
-    val data: List<Macro>?
-)
+    @SerializedName("consecutivoRuta")
+    val consecutivoRuta: Int?,
+
+    @SerializedName("Usuario")
+    val usuario: String?,
+
+    @SerializedName("Estado")
+    val estado: Int?,
+
+    @SerializedName("Tope")
+    val tope: Int?,
+
+    @SerializedName("Suscriptor")
+    val suscriptor: String?
+) {
+    /**
+     * Nombre completo del suscriptor (Nombre + Apellido).
+     */
+    val nombreCompleto: String
+        get() = if (apellido != null && apellido != "APELLIDO") "$nombre $apellido" else nombre
+}

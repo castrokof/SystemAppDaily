@@ -3,36 +3,41 @@ package com.systemapp.daily.data.model
 import com.google.gson.annotations.SerializedName
 
 /**
- * Respuesta del endpoint de login.
- * Ajustar los campos según la respuesta real de tu API loginMovil1.
+ * Respuesta del endpoint loginMovil1.
+ * La API retorna un array JSON: [ { id, usuario, nombre, api_token, ... } ]
+ * Cada elemento del array es un UserLogin.
  */
-data class LoginResponse(
-    @SerializedName("success")
-    val success: Boolean,
-
-    @SerializedName("message")
-    val message: String?,
-
-    @SerializedName("token")
-    val token: String?,
-
-    @SerializedName("user")
-    val user: UserData?
-)
-
-data class UserData(
+data class UserLogin(
     @SerializedName("id")
     val id: Int,
-
-    @SerializedName("nombre")
-    val nombre: String,
 
     @SerializedName("usuario")
     val usuario: String,
 
+    @SerializedName("nombre")
+    val nombre: String,
+
+    @SerializedName("tipodeusuario")
+    val tipoDeUsuario: String?,
+
     @SerializedName("email")
     val email: String?,
 
-    @SerializedName("rol")
-    val rol: String?
+    @SerializedName("empresa")
+    val empresa: String?,
+
+    @SerializedName("remenber_token")
+    val rememberToken: String?,
+
+    @SerializedName("estado")
+    val estado: String?,
+
+    @SerializedName("api_token")
+    val apiToken: String?,
+
+    @SerializedName("created_at")
+    val createdAt: String?,
+
+    @SerializedName("updated_at")
+    val updatedAt: String?
 )

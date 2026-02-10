@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-files-path
+        name="lecturas_fotos"
+        path="Pictures" />
+    <cache-path
+        name="cache_fotos"
+        path="photos" />
+</paths>

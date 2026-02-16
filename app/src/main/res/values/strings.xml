@@ -15,9 +15,16 @@
     <string name="btn_tomar_foto">Tomar Foto del Medidor</string>
     <string name="btn_enviar_lectura">Enviar Lectura</string>
 
+    <!-- Revisión -->
+    <string name="nav_lecturas">Lecturas</string>
+    <string name="nav_revisiones">Revisiones</string>
+    <string name="btn_enviar_revision">Enviar Revisión</string>
+    <string name="no_medidores_revision">No hay medidores para revisión</string>
+
     <!-- Mensajes -->
     <string name="msg_limite_alcanzado">Límite de lecturas alcanzado para hoy</string>
     <string name="msg_fotos_minimo">Debe tomar al menos %d fotos</string>
     <string name="msg_lectura_enviada">Lectura enviada correctamente</string>
+    <string name="msg_revision_enviada">Revisión enviada correctamente</string>
     <string name="msg_error_conexion">Error de conexión</string>
 </resources>

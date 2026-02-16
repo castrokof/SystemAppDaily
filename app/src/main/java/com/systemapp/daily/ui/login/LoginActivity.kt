@@ -8,7 +8,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.systemapp.daily.databinding.ActivityLoginBinding
-import com.systemapp.daily.ui.home.HomeActivity
+import com.systemapp.daily.ui.main.MainActivity
 import com.systemapp.daily.utils.NetworkResult
 import com.systemapp.daily.utils.SessionManager
 
@@ -91,7 +91,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun navigateToHome() {
-        startActivity(Intent(this, HomeActivity::class.java))
+        startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
 }

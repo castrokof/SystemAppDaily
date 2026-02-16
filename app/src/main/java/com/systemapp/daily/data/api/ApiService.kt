@@ -74,4 +74,24 @@ interface ApiService {
         @Part("observacion") observacion: RequestBody?,
         @Part fotos: List<MultipartBody.Part>
     ): Response<LecturaResponse>
+
+    // =============================================
+    // REVISIONES - Endpoints nuevos
+    // =============================================
+
+    /**
+     * Enviar una revisión de servicio de acueducto con fotos (multipart).
+     * NUEVO: Debes crear este endpoint en Laravel.
+     */
+    @Multipart
+    @POST("revisionesMovil")
+    suspend fun enviarRevision(
+        @Part("api_token") apiToken: RequestBody,
+        @Part("medidor_id") medidorId: RequestBody,
+        @Part("checklist_json") checklistJson: RequestBody,
+        @Part("observacion") observacion: RequestBody?,
+        @Part("latitud") latitud: RequestBody?,
+        @Part("longitud") longitud: RequestBody?,
+        @Part fotos: List<MultipartBody.Part>
+    ): Response<RevisionResponse>
 }

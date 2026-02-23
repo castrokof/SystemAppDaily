@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SystemApp Lecturas</string>
+
+    <!-- Login -->
+    <string name="login_subtitle">Lectura de macromedidores</string>
+    <string name="hint_usuario">Usuario</string>
+    <string name="hint_password">Contraseña</string>
+    <string name="btn_login">Iniciar Sesión</string>
+
+    <!-- Home -->
+    <string name="no_macros">No hay macromedidores asignados</string>
+
+    <!-- Lectura -->
+    <string name="btn_tomar_foto">Tomar Foto del Medidor</string>
+    <string name="btn_enviar_lectura">Enviar Lectura</string>
+
+    <!-- Revisión -->
+    <string name="nav_lecturas">Lecturas</string>
+    <string name="nav_revisiones">Revisiones</string>
+    <string name="btn_enviar_revision">Enviar Revisión</string>
+    <string name="no_medidores_revision">No hay medidores para revisión</string>
+
+    <!-- Mensajes -->
+    <string name="msg_limite_alcanzado">Límite de lecturas alcanzado para hoy</string>
+    <string name="msg_fotos_minimo">Debe tomar al menos %d fotos</string>
+    <string name="msg_lectura_enviada">Lectura enviada correctamente</string>
+    <string name="msg_revision_enviada">Revisión enviada correctamente</string>
+    <string name="msg_error_conexion">Error de conexión</string>
+</resources>

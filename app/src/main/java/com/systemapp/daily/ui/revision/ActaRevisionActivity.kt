@@ -1,48 +1,49 @@
 package com.systemapp.daily.ui.revision
 
-import android.content.Context
-import android.graphics.Bitmap
+import android.Manifest
+import android.bluetooth.BluetoothDevice
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.print.PrintAttributes
-import android.print.PrintDocumentAdapter
-import android.print.PrintManager
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.FileProvider
+import androidx.core.app.ActivityCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.systemapp.daily.R
 import com.systemapp.daily.data.model.ChecklistItem
 import com.systemapp.daily.data.model.EstadoCheck
 import com.systemapp.daily.databinding.ActivityActaRevisionBinding
 import com.systemapp.daily.utils.Constants
 import com.systemapp.daily.utils.NetworkResult
 import com.systemapp.daily.utils.SessionManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileInputStream
-import android.os.CancellationSignal
-import android.os.ParcelFileDescriptor
-import android.print.PageRange
-import android.print.PrintDocumentInfo
 
 /**
  * Activity para generar el acta de revisión con firmas.
  * Flujo:
  * 1. El inspector firma
  * 2. El cliente firma
- * 3. Se genera el PDF
+ * 3. Se genera el PDF (para enviar al servidor)
  * 4. Se envía al servidor (revisión + acta PDF)
- * 5. Se imprime una copia para el cliente
+ * 5. Se imprime una copia para el cliente via Bluetooth ESC/POS 58mm
  */
 class ActaRevisionActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityActaRevisionBinding
     private lateinit var sessionManager: SessionManager
     private val viewModel: RevisionViewModel by viewModels()
+    private val escPosPrinter = EscPosPrinter()
 
     private var actaPdfFile: File? = null
+    private var cachedChecklistItems: List<ChecklistItem> = emptyList()
 
     // Datos recibidos del RevisionActivity
     private var medidorId: Int = 0
@@ -55,6 +56,17 @@ class ActaRevisionActivity : AppCompatActivity() {
     private var latitud: Double? = null
     private var longitud: Double? = null
     private var fotoPaths: ArrayList<String> = arrayListOf()
+
+    private val bluetoothPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.values.all { it }
+        if (allGranted) {
+            mostrarDialogoImpresoras()
+        } else {
+            Toast.makeText(this, "Se necesitan permisos Bluetooth para imprimir", Toast.LENGTH_LONG).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,7 +122,7 @@ class ActaRevisionActivity : AppCompatActivity() {
         }
 
         binding.btnImprimirActa.setOnClickListener {
-            imprimirActa()
+            solicitarPermisosBluetooth()
         }
     }
 
@@ -125,11 +137,11 @@ class ActaRevisionActivity : AppCompatActivity() {
             return
         }
 
-        // Generar PDF
+        // Generar PDF para enviar al servidor
         val firmaUsuario = binding.signatureUsuario.getSignatureBitmap()
         val firmaCliente = binding.signatureCliente.getSignatureBitmap()
 
-        val checklistItems = parseChecklist()
+        cachedChecklistItems = parseChecklist()
 
         val actaData = ActaPdfGenerator.ActaData(
             empresa = sessionManager.userEmpresa ?: "N/A",
@@ -137,7 +149,7 @@ class ActaRevisionActivity : AppCompatActivity() {
             suscriptor = medidorSuscriptor,
             direccion = medidorDireccion,
             medidorNombre = medidorNombre,
-            checklistItems = checklistItems,
+            checklistItems = cachedChecklistItems,
             observacion = observacion,
             latitud = latitud,
             longitud = longitud,
@@ -231,71 +243,89 @@ class ActaRevisionActivity : AppCompatActivity() {
         }
     }
 
-    private fun imprimirActa() {
-        val pdfFile = actaPdfFile
-        if (pdfFile == null || !pdfFile.exists()) {
-            Toast.makeText(this, "No se encontró el acta PDF", Toast.LENGTH_SHORT).show()
+    // ========================================
+    // IMPRESIÓN BLUETOOTH ESC/POS 58mm
+    // ========================================
+
+    private fun solicitarPermisosBluetooth() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12+
+            val permisos = arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN
+            )
+            val necesita = permisos.any {
+                ActivityCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            }
+            if (necesita) {
+                bluetoothPermissionLauncher.launch(permisos)
+            } else {
+                mostrarDialogoImpresoras()
+            }
+        } else {
+            // Android 11 y menores
+            mostrarDialogoImpresoras()
+        }
+    }
+
+    private fun mostrarDialogoImpresoras() {
+        val printers = escPosPrinter.getPairedPrinters()
+
+        if (printers.isEmpty()) {
+            Toast.makeText(this, "No hay impresoras Bluetooth pareadas. Vincula tu impresora desde Configuración > Bluetooth", Toast.LENGTH_LONG).show()
             return
         }
 
-        val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
-        val jobName = "Acta_Revision_${medidorCodigo}"
+        val nombres = printers.map { "${it.name ?: "Desconocida"} (${it.address})" }.toTypedArray()
 
-        val printAdapter = object : PrintDocumentAdapter() {
-            override fun onLayout(
-                oldAttributes: PrintAttributes?,
-                newAttributes: PrintAttributes,
-                cancellationSignal: CancellationSignal?,
-                callback: LayoutResultCallback,
-                extras: Bundle?
-            ) {
-                if (cancellationSignal?.isCanceled == true) {
-                    callback.onLayoutCancelled()
-                    return
-                }
-
-                val info = PrintDocumentInfo.Builder(jobName)
-                    .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
-                    .setPageCount(PrintDocumentInfo.PAGE_COUNT_UNKNOWN)
-                    .build()
-
-                callback.onLayoutFinished(info, true)
+        AlertDialog.Builder(this)
+            .setTitle("Seleccionar Impresora")
+            .setItems(nombres) { _, which ->
+                imprimirEnImpresora(printers[which])
             }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
 
-            override fun onWrite(
-                pages: Array<out PageRange>?,
-                destination: ParcelFileDescriptor,
-                cancellationSignal: CancellationSignal?,
-                callback: WriteResultCallback
-            ) {
-                try {
-                    FileInputStream(pdfFile).use { input ->
-                        ParcelFileDescriptor.AutoCloseOutputStream(destination).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
+    private fun imprimirEnImpresora(device: BluetoothDevice) {
+        // Obtener las firmas como bitmap para imprimir
+        val firmaUsuario = binding.signatureUsuario.getSignatureBitmap()
+        val firmaCliente = binding.signatureCliente.getSignatureBitmap()
 
-                    if (cancellationSignal?.isCanceled == true) {
-                        callback.onWriteCancelled()
-                    } else {
-                        callback.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
-                    }
-                } catch (e: Exception) {
-                    callback.onWriteFailed(e.message)
+        val ticketData = EscPosPrinter.ActaTicketData(
+            empresa = sessionManager.userEmpresa ?: "N/A",
+            refMedidor = medidorCodigo,
+            suscriptor = medidorSuscriptor,
+            direccion = medidorDireccion,
+            medidorNombre = medidorNombre,
+            checklistItems = cachedChecklistItems.ifEmpty { parseChecklist() },
+            observacion = observacion,
+            latitud = latitud,
+            longitud = longitud,
+            usuario = sessionManager.userName ?: sessionManager.userUsuario ?: "Inspector",
+            firmaUsuario = firmaUsuario,
+            firmaCliente = firmaCliente
+        )
+
+        binding.progressBarActa.visibility = View.VISIBLE
+        binding.btnImprimirActa.isEnabled = false
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = escPosPrinter.imprimirActa(device, ticketData)
+
+            withContext(Dispatchers.Main) {
+                binding.progressBarActa.visibility = View.GONE
+                binding.btnImprimirActa.isEnabled = true
+                firmaUsuario.recycle()
+                firmaCliente.recycle()
+
+                result.onSuccess {
+                    Toast.makeText(this@ActaRevisionActivity, "Copia impresa para el cliente", Toast.LENGTH_SHORT).show()
+                }.onFailure { error ->
+                    Toast.makeText(this@ActaRevisionActivity, error.message, Toast.LENGTH_LONG).show()
                 }
             }
         }
-
-        val printAttributes = PrintAttributes.Builder()
-            .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-            .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
-            .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-            .build()
-
-        printManager.print(jobName, printAdapter, printAttributes)
-
-        // Después de imprimir, cerrar todo el flujo
-        Toast.makeText(this, "Imprimiendo copia para el cliente", Toast.LENGTH_SHORT).show()
     }
 
     override fun onBackPressed() {

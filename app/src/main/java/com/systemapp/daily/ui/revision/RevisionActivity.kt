@@ -5,10 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
-import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,13 +16,11 @@ import com.google.android.gms.location.LocationServices
 import com.google.gson.Gson
 import com.systemapp.daily.R
 import com.systemapp.daily.data.model.ChecklistAcueducto
-import com.systemapp.daily.data.model.ChecklistItem
 import com.systemapp.daily.data.model.EstadoCheck
 import com.systemapp.daily.databinding.ActivityRevisionBinding
 import com.systemapp.daily.ui.lectura.CameraActivity
 import com.systemapp.daily.ui.lectura.FotoAdapter
 import com.systemapp.daily.utils.Constants
-import com.systemapp.daily.utils.NetworkResult
 import com.systemapp.daily.utils.SessionManager
 
 class RevisionActivity : AppCompatActivity() {
@@ -34,7 +30,6 @@ class RevisionActivity : AppCompatActivity() {
     private lateinit var checklistAdapter: ChecklistAdapter
     private lateinit var fotoAdapter: FotoAdapter
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private val viewModel: RevisionViewModel by viewModels()
 
     private val checklistItems = ChecklistAcueducto.getChecklist().toMutableList()
     private val fotoPaths = mutableListOf<String>()
@@ -58,6 +53,15 @@ class RevisionActivity : AppCompatActivity() {
                 updateFotoCount()
                 updateEnviarButton()
             }
+        }
+    }
+
+    private val actaLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // Acta generada, firmada y enviada exitosamente
+            finish()
         }
     }
 
@@ -89,7 +93,6 @@ class RevisionActivity : AppCompatActivity() {
         setupChecklist()
         setupFotos()
         setupButtons()
-        observeViewModel()
         solicitarUbicacion()
     }
 
@@ -194,8 +197,6 @@ class RevisionActivity : AppCompatActivity() {
             return
         }
 
-        val apiToken = sessionManager.apiToken ?: return
-        val usuario = sessionManager.userUsuario ?: return
         val observacion = binding.etObservacionRevision.text.toString().trim().ifEmpty { null }
 
         // Convertir checklist a JSON
@@ -210,40 +211,20 @@ class RevisionActivity : AppCompatActivity() {
         }
         val checklistJson = Gson().toJson(checklistData)
 
-        viewModel.enviarRevision(
-            apiToken = apiToken,
-            medidorId = medidorId,
-            refMedidor = medidorCodigo,
-            suscriptor = medidorSuscriptor,
-            direccion = medidorDireccion,
-            checklistJson = checklistJson,
-            observacion = observacion,
-            latitud = currentLatitud,
-            longitud = currentLongitud,
-            fotoPaths = fotoPaths,
-            usuario = usuario
-        )
-    }
-
-    private fun observeViewModel() {
-        viewModel.envioResult.observe(this) { result ->
-            when (result) {
-                is NetworkResult.Loading -> {
-                    binding.progressBarRevision.visibility = View.VISIBLE
-                    binding.btnEnviarRevision.isEnabled = false
-                }
-                is NetworkResult.Success -> {
-                    binding.progressBarRevision.visibility = View.GONE
-                    Toast.makeText(this, "Revisión enviada correctamente", Toast.LENGTH_SHORT).show()
-                    finish()
-                }
-                is NetworkResult.Error -> {
-                    binding.progressBarRevision.visibility = View.GONE
-                    updateEnviarButton()
-                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
-                }
-            }
+        // Navegar al ActaRevisionActivity para firmar e imprimir
+        val intent = Intent(this, ActaRevisionActivity::class.java).apply {
+            putExtra(Constants.EXTRA_MACRO_ID, medidorId)
+            putExtra(Constants.EXTRA_MACRO_NOMBRE, medidorNombre)
+            putExtra(Constants.EXTRA_MACRO_CODIGO, medidorCodigo)
+            putExtra(ActaRevisionActivity.EXTRA_SUSCRIPTOR, medidorSuscriptor)
+            putExtra(ActaRevisionActivity.EXTRA_DIRECCION, medidorDireccion)
+            putExtra(ActaRevisionActivity.EXTRA_CHECKLIST_JSON, checklistJson)
+            putExtra(ActaRevisionActivity.EXTRA_OBSERVACION, observacion)
+            if (currentLatitud != null) putExtra(ActaRevisionActivity.EXTRA_LATITUD, currentLatitud!!)
+            if (currentLongitud != null) putExtra(ActaRevisionActivity.EXTRA_LONGITUD, currentLongitud!!)
+            putStringArrayListExtra(ActaRevisionActivity.EXTRA_FOTO_PATHS, ArrayList(fotoPaths))
         }
+        actaLauncher.launch(intent)
     }
 
     companion object {

@@ -69,6 +69,12 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- Acta Revision Activity (firmas e impresión) -->
+        <activity
+            android:name=".ui.revision.ActaRevisionActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- FileProvider para compartir fotos -->
         <provider
             android:name="androidx.core.content.FileProvider"

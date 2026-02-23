@@ -21,7 +21,8 @@ class RevisionRepository(context: Context) {
     private val revisionDao = AppDatabase.getDatabase(context).revisionDao()
 
     /**
-     * Envía una revisión con fotos al servidor.
+     * Envía una revisión con fotos y acta PDF al servidor.
+     * Los fotoPaths pueden incluir un archivo PDF al final (el acta firmada).
      */
     suspend fun enviarRevision(
         apiToken: String,
@@ -44,10 +45,21 @@ class RevisionRepository(context: Context) {
             val latBody = latitud?.toString()?.toRequestBody("text/plain".toMediaTypeOrNull())
             val lonBody = longitud?.toString()?.toRequestBody("text/plain".toMediaTypeOrNull())
 
-            val fotoParts = fotoPaths.mapIndexed { index, path ->
+            // Separar fotos (imágenes) del acta PDF
+            val imagePaths = fotoPaths.filter { !it.endsWith(".pdf") }
+            val pdfPath = fotoPaths.firstOrNull { it.endsWith(".pdf") }
+
+            val fotoParts = imagePaths.mapIndexed { index, path ->
                 val file = File(path)
                 val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
                 MultipartBody.Part.createFormData("fotos[$index]", file.name, requestFile)
+            }
+
+            // Acta PDF como parte separada
+            val actaPdfPart = pdfPath?.let { path ->
+                val file = File(path)
+                val requestFile = file.asRequestBody("application/pdf".toMediaTypeOrNull())
+                MultipartBody.Part.createFormData("acta_pdf", file.name, requestFile)
             }
 
             val response = api.enviarRevision(
@@ -57,7 +69,8 @@ class RevisionRepository(context: Context) {
                 observacion = obsBody,
                 latitud = latBody,
                 longitud = lonBody,
-                fotos = fotoParts
+                fotos = fotoParts,
+                actaPdf = actaPdfPart
             )
 
             if (response.isSuccessful) {

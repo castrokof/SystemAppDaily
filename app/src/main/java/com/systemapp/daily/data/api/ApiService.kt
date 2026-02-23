@@ -80,8 +80,12 @@ interface ApiService {
     // =============================================
 
     /**
-     * Enviar una revisión de servicio de acueducto con fotos (multipart).
+     * Enviar una revisión de servicio de acueducto con fotos y acta PDF (multipart).
      * NUEVO: Debes crear este endpoint en Laravel.
+     *
+     * Archivos enviados:
+     *   - fotos[0], fotos[1], ... : fotos de evidencia (image/jpeg)
+     *   - acta_pdf: PDF del acta firmada (application/pdf) - se envía como último archivo en fotos[]
      */
     @Multipart
     @POST("revisionesMovil")
@@ -92,6 +96,7 @@ interface ApiService {
         @Part("observacion") observacion: RequestBody?,
         @Part("latitud") latitud: RequestBody?,
         @Part("longitud") longitud: RequestBody?,
-        @Part fotos: List<MultipartBody.Part>
+        @Part fotos: List<MultipartBody.Part>,
+        @Part actaPdf: MultipartBody.Part?
     ): Response<RevisionResponse>
 }

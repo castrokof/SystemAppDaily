@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_macromedidores"
+            android:icon="@drawable/ic_meter"
+            android:title="@string/nav_macromedidores" />
+
+        <item
+            android:id="@+id/nav_revisiones"
+            android:icon="@drawable/ic_checklist"
+            android:title="@string/nav_revisiones" />
+    </group>
+
+    <item android:title="@string/nav_configuracion">
+        <menu>
+            <item
+                android:id="@+id/nav_firma"
+                android:icon="@drawable/ic_firma"
+                android:title="@string/nav_configurar_firma" />
+
+            <item
+                android:id="@+id/nav_impresora"
+                android:icon="@drawable/ic_print"
+                android:title="@string/nav_configurar_impresora" />
+        </menu>
+    </item>
+
+    <item android:title="@string/nav_datos">
+        <menu>
+            <item
+                android:id="@+id/nav_sincronizar"
+                android:icon="@drawable/ic_sync"
+                android:title="@string/nav_sincronizar" />
+
+            <item
+                android:id="@+id/nav_borrar_datos"
+                android:icon="@drawable/ic_delete"
+                android:title="@string/nav_borrar_datos" />
+        </menu>
+    </item>
+
+</menu>

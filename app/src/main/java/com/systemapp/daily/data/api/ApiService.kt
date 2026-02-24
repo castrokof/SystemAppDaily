@@ -6,27 +6,11 @@ import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
-/**
- * Definición de endpoints de la API.
- *
- * Endpoints existentes:
- *   - loginMovil1: Login del usuario
- *   - medidoresout: Listar medidores asignados al usuario
- *
- * Endpoints nuevos que debes crear en Laravel:
- *   - lecturasMovil/check: Verificar si puede tomar lectura hoy
- *   - lecturasMovil: Enviar una lectura con fotos
- */
 interface ApiService {
 
     // =============================================
-    // LOGIN - Endpoint existente
+    // LOGIN
     // =============================================
-
-    /**
-     * Login del usuario.
-     * Retorna un array JSON: [ { id, usuario, nombre, api_token, ... } ]
-     */
     @GET("loginMovil1")
     suspend fun login(
         @Query("usuario") usuario: String,
@@ -34,37 +18,40 @@ interface ApiService {
     ): Response<List<UserLogin>>
 
     // =============================================
-    // MEDIDORES - Endpoint existente
+    // MEDIDORES
     // =============================================
-
-    /**
-     * Obtener lista de medidores asignados al usuario.
-     * Endpoint existente: /medidoresout?usuario=xxx
-     * Retorna array JSON con los medidores.
-     */
     @GET("medidoresout")
     suspend fun getMedidores(
         @Query("usuario") usuario: String
     ): Response<List<Medidor>>
 
     // =============================================
-    // LECTURAS - Endpoints nuevos
+    // SINCRONIZACIÓN - Descarga
     // =============================================
+    @GET("ordenesMacro")
+    suspend fun getOrdenesMacro(
+        @Query("api_token") apiToken: String
+    ): Response<List<MacroEntity>>
 
-    /**
-     * Verificar si el usuario puede tomar lectura de un medidor hoy.
-     * NUEVO: Debes crear este endpoint en Laravel.
-     */
+    @GET("ordenesRevision")
+    suspend fun getOrdenesRevision(
+        @Query("api_token") apiToken: String
+    ): Response<List<RevisionEntity>>
+
+    @GET("listasParametros")
+    suspend fun getListasParametros(
+        @Query("api_token") apiToken: String
+    ): Response<List<ListaEntity>>
+
+    // =============================================
+    // LECTURAS - Legacy
+    // =============================================
     @GET("lecturasMovil/check")
     suspend fun checkLectura(
         @Query("api_token") apiToken: String,
         @Query("medidor_id") medidorId: Int
     ): Response<CheckLecturaResponse>
 
-    /**
-     * Enviar una lectura con fotos (multipart).
-     * NUEVO: Debes crear este endpoint en Laravel.
-     */
     @Multipart
     @POST("lecturasMovil")
     suspend fun enviarLectura(
@@ -76,17 +63,23 @@ interface ApiService {
     ): Response<LecturaResponse>
 
     // =============================================
-    // REVISIONES - Endpoints nuevos
+    // MACROS - Subida
     // =============================================
+    @Multipart
+    @POST("macromedidoresMovil")
+    suspend fun enviarMacro(
+        @Part("api_token") apiToken: RequestBody,
+        @Part("id_orden") idOrden: RequestBody,
+        @Part("lectura_actual") lecturaActual: RequestBody,
+        @Part("observacion") observacion: RequestBody?,
+        @Part("gps_latitud") gpsLatitud: RequestBody?,
+        @Part("gps_longitud") gpsLongitud: RequestBody?,
+        @Part fotos: List<MultipartBody.Part>
+    ): Response<SyncResponse>
 
-    /**
-     * Enviar una revisión de servicio de acueducto con fotos y acta PDF (multipart).
-     * NUEVO: Debes crear este endpoint en Laravel.
-     *
-     * Archivos enviados:
-     *   - fotos[0], fotos[1], ... : fotos de evidencia (image/jpeg)
-     *   - acta_pdf: PDF del acta firmada (application/pdf) - se envía como último archivo en fotos[]
-     */
+    // =============================================
+    // REVISIONES - Subida v2
+    // =============================================
     @Multipart
     @POST("revisionesMovil")
     suspend fun enviarRevision(
@@ -99,4 +92,28 @@ interface ApiService {
         @Part fotos: List<MultipartBody.Part>,
         @Part actaPdf: MultipartBody.Part?
     ): Response<RevisionResponse>
+
+    @Multipart
+    @POST("revisionesMovilV2")
+    suspend fun enviarRevisionV2(
+        @Part("api_token") apiToken: RequestBody,
+        @Part("id_orden") idOrden: RequestBody,
+        @Part("codigo_predio") codigoPredio: RequestBody,
+        @Part("estado_acometida") estadoAcometida: RequestBody?,
+        @Part("estado_sellos") estadoSellos: RequestBody?,
+        @Part("nombre_atiende") nombreAtiende: RequestBody?,
+        @Part("tipo_documento") tipoDocumento: RequestBody?,
+        @Part("documento") documento: RequestBody?,
+        @Part("num_familias") numFamilias: RequestBody?,
+        @Part("num_personas") numPersonas: RequestBody?,
+        @Part("motivo_revision") motivoRevision: RequestBody?,
+        @Part("motivo_detalle") motivoDetalle: RequestBody?,
+        @Part("generalidades") generalidades: RequestBody?,
+        @Part("censo_hidraulico_json") censoHidraulicoJson: RequestBody?,
+        @Part("gps_latitud") gpsLatitud: RequestBody?,
+        @Part("gps_longitud") gpsLongitud: RequestBody?,
+        @Part fotos: List<MultipartBody.Part>,
+        @Part firmaCliente: MultipartBody.Part?,
+        @Part actaPdf: MultipartBody.Part?
+    ): Response<SyncResponse>
 }

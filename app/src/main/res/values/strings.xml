@@ -21,6 +21,56 @@
     <string name="btn_enviar_revision">Enviar Revisión</string>
     <string name="no_medidores_revision">No hay medidores para revisión</string>
 
+    <!-- Navigation Drawer -->
+    <string name="nav_macromedidores">Macromedidores</string>
+    <string name="nav_configuracion">Configuración</string>
+    <string name="nav_configurar_firma">Configurar Firma</string>
+    <string name="nav_configurar_impresora">Configurar Impresora</string>
+    <string name="nav_datos">Datos</string>
+    <string name="nav_sincronizar">Sincronizar</string>
+    <string name="nav_borrar_datos">Borrar Datos</string>
+    <string name="nav_abrir">Abrir menú</string>
+    <string name="nav_cerrar">Cerrar menú</string>
+    <string name="bienvenido_formato">Bienvenido, %1$s</string>
+
+    <!-- GPS -->
+    <string name="gps_desactivado">GPS desactivado. Active la ubicación para registrar coordenadas.</string>
+    <string name="permiso_ubicacion_requerido">Se requiere permiso de ubicación para registrar coordenadas GPS</string>
+    <string name="gps_baja_precision">Precisión GPS baja (mayor a 30m). Los datos se guardarán pero revise la señal.</string>
+
+    <!-- Sincronización -->
+    <string name="sin_sincronizar">Sin sincronizar</string>
+    <string name="ultima_sync_formato">Última sync: %1$s</string>
+
+    <!-- Borrar datos -->
+    <string name="borrar_datos_titulo">Borrar datos locales</string>
+    <string name="borrar_datos_mensaje">Se eliminarán todos los datos locales excepto el usuario. ¿Continuar?</string>
+    <string name="datos_borrados">Datos locales eliminados</string>
+    <string name="si">Sí</string>
+    <string name="no">No</string>
+
+    <!-- Firma -->
+    <string name="configurar_firma">Configurar Firma</string>
+    <string name="firma_instruccion">Dibuje su firma en el recuadro. Esta firma se usará en las actas de revisión.</string>
+    <string name="firma_actual">Firma actual:</string>
+    <string name="firma_vacia">Debe dibujar una firma</string>
+    <string name="firma_guardada">Firma guardada correctamente</string>
+    <string name="guardar_firma">Guardar Firma</string>
+    <string name="limpiar">Limpiar</string>
+
+    <!-- Impresora -->
+    <string name="configurar_impresora">Configurar Impresora</string>
+    <string name="impresora_actual">Impresora actual:</string>
+    <string name="no_configurada">No configurada</string>
+    <string name="dispositivos_vinculados">Dispositivos Bluetooth vinculados</string>
+    <string name="buscar_dispositivos">Actualizar Lista</string>
+    <string name="imprimir_prueba">Imprimir Prueba</string>
+    <string name="impresora_seleccionada">Impresora seleccionada: %1$s</string>
+    <string name="impresion_prueba_ok">Impresión de prueba exitosa</string>
+    <string name="permiso_bluetooth_requerido">Se requiere permiso de Bluetooth</string>
+    <string name="bluetooth_no_disponible">Bluetooth no disponible en este dispositivo</string>
+    <string name="no_dispositivos_vinculados">No hay dispositivos vinculados. Vincule una impresora desde Configuración de Bluetooth.</string>
+
     <!-- Mensajes -->
     <string name="msg_limite_alcanzado">Límite de lecturas alcanzado para hoy</string>
     <string name="msg_fotos_minimo">Debe tomar al menos %d fotos</string>

@@ -62,9 +62,21 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
-        <!-- Main Activity (Bottom Navigation) -->
+        <!-- Main Activity (Navigation Drawer - Dashboard) -->
         <activity
             android:name=".ui.main.MainActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- Firma Activity (Configurar firma del revisor) -->
+        <activity
+            android:name=".ui.firma.FirmaActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- Impresora Activity (Configurar impresora BT) -->
+        <activity
+            android:name=".ui.impresora.ImpresoraActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

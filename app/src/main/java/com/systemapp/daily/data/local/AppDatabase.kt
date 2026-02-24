@@ -4,18 +4,33 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.systemapp.daily.data.model.Lectura
-import com.systemapp.daily.data.model.Revision
+import com.systemapp.daily.data.model.*
 
-/**
- * Base de datos local Room.
- * Almacena lecturas y revisiones pendientes de sincronizar cuando no hay conexión.
- */
-@Database(entities = [Lectura::class, Revision::class], version = 2, exportSchema = false)
+@Database(
+    entities = [
+        Lectura::class,
+        Revision::class,
+        UserEntity::class,
+        MacroEntity::class,
+        RevisionEntity::class,
+        HidraulicoEntity::class,
+        ListaEntity::class
+    ],
+    version = 3,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
 
+    // Legacy DAOs
     abstract fun lecturaDao(): LecturaDao
     abstract fun revisionDao(): RevisionDao
+
+    // Nuevos DAOs
+    abstract fun userDao(): UserDao
+    abstract fun macroDao(): MacroDao
+    abstract fun ordenRevisionDao(): OrdenRevisionDao
+    abstract fun hidraulicoDao(): HidraulicoDao
+    abstract fun listaDao(): ListaDao
 
     companion object {
         @Volatile
@@ -28,7 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "system_app_daily_db"
                 ).fallbackToDestructiveMigration()
-                .build()
+                    .build()
                 INSTANCE = instance
                 instance
             }

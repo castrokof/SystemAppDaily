@@ -3,9 +3,6 @@ package com.systemapp.daily.utils
 import android.content.Context
 import android.content.SharedPreferences
 
-/**
- * Maneja la sesión del usuario (login/logout, api_token, datos de usuario).
- */
 class SessionManager(context: Context) {
 
     private val prefs: SharedPreferences =
@@ -38,6 +35,22 @@ class SessionManager(context: Context) {
     var isLoggedIn: Boolean
         get() = prefs.getBoolean(Constants.PREF_IS_LOGGED_IN, false)
         set(value) = prefs.edit().putBoolean(Constants.PREF_IS_LOGGED_IN, value).apply()
+
+    var firmaPath: String?
+        get() = prefs.getString(Constants.PREF_FIRMA_PATH, null)
+        set(value) = prefs.edit().putString(Constants.PREF_FIRMA_PATH, value).apply()
+
+    var printerName: String?
+        get() = prefs.getString(Constants.PREF_PRINTER_NAME, null)
+        set(value) = prefs.edit().putString(Constants.PREF_PRINTER_NAME, value).apply()
+
+    var printerAddress: String?
+        get() = prefs.getString(Constants.PREF_PRINTER_ADDRESS, null)
+        set(value) = prefs.edit().putString(Constants.PREF_PRINTER_ADDRESS, value).apply()
+
+    var lastSyncDate: String?
+        get() = prefs.getString(Constants.PREF_LAST_SYNC, null)
+        set(value) = prefs.edit().putString(Constants.PREF_LAST_SYNC, value).apply()
 
     fun saveLoginData(
         apiToken: String,

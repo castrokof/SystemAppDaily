@@ -4,8 +4,13 @@ import android.content.Context
 import com.systemapp.daily.data.api.RetrofitClient
 import com.systemapp.daily.data.local.AppDatabase
 import com.systemapp.daily.data.model.CheckLecturaResponse
+import com.systemapp.daily.data.model.EstadoSync
 import com.systemapp.daily.data.model.Lectura
 import com.systemapp.daily.data.model.LecturaResponse
+import com.systemapp.daily.data.model.SyncQueueEntity
+import com.systemapp.daily.data.model.TipoSync
+import com.systemapp.daily.data.network.NetworkMonitor
+import com.systemapp.daily.data.sync.SyncWorker
 import com.systemapp.daily.utils.NetworkResult
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -19,16 +24,29 @@ import java.util.Locale
 /**
  * Repositorio para operaciones de lecturas.
  * Maneja tanto la API remota como el almacenamiento local.
+ * Implementa auto-sync: guarda local → intenta enviar → encola si falla.
  */
-class LecturaRepository(context: Context) {
+class LecturaRepository(private val context: Context) {
 
     private val api = RetrofitClient.apiService
-    private val lecturaDao = AppDatabase.getDatabase(context).lecturaDao()
+    private val db = AppDatabase.getDatabase(context)
+    private val lecturaDao = db.lecturaDao()
+    private val syncQueueDao = db.syncQueueDao()
+    private val networkMonitor = NetworkMonitor.getInstance(context)
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+
+    /**
+     * Resultado del envío con info de sync.
+     */
+    sealed class SyncStatus {
+        data class EnviadoOk(val response: LecturaResponse) : SyncStatus()
+        data class GuardadoLocal(val message: String) : SyncStatus()
+        data class Error(val message: String) : SyncStatus()
+    }
 
     /**
      * Verifica si el usuario puede tomar lectura de un macro hoy.
-     * Primero intenta verificar con la API, si falla usa datos locales.
      */
     suspend fun checkPuedeLeer(apiToken: String, macroId: Int): NetworkResult<CheckLecturaResponse> {
         return try {
@@ -44,7 +62,6 @@ class LecturaRepository(context: Context) {
                 NetworkResult.Error("Error del servidor: ${response.code()}", response.code())
             }
         } catch (e: Exception) {
-            // Si falla la conexión, verificar localmente
             val lecturasHoy = contarLecturasLocalesHoy(macroId)
             val check = CheckLecturaResponse(
                 success = true,
@@ -60,7 +77,9 @@ class LecturaRepository(context: Context) {
     }
 
     /**
-     * Envía una lectura con fotos al servidor.
+     * Guarda lectura localmente, intenta enviar inmediatamente.
+     * Si no hay red o falla, encola para WorkManager.
+     * Retorna SyncStatus para feedback en UI.
      */
     suspend fun enviarLectura(
         apiToken: String,
@@ -68,50 +87,76 @@ class LecturaRepository(context: Context) {
         valorLectura: String,
         observacion: String?,
         fotoPaths: List<String>
-    ): NetworkResult<LecturaResponse> {
-        return try {
-            val tokenBody = apiToken.toRequestBody("text/plain".toMediaTypeOrNull())
-            val macroIdBody = macroId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-            val valorBody = valorLectura.toRequestBody("text/plain".toMediaTypeOrNull())
-            val obsBody = observacion?.toRequestBody("text/plain".toMediaTypeOrNull())
+    ): SyncStatus {
+        // 1. SIEMPRE guardar localmente primero
+        val lecturaId = guardarLecturaLocal(macroId, valorLectura, observacion, fotoPaths, false)
 
-            val fotoParts = fotoPaths.mapIndexed { index, path ->
-                val file = File(path)
-                val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                MultipartBody.Part.createFormData("fotos[$index]", file.name, requestFile)
-            }
+        // 2. Si hay conexión, intentar envío inmediato
+        if (networkMonitor.isConnected()) {
+            try {
+                val tokenBody = apiToken.toRequestBody("text/plain".toMediaTypeOrNull())
+                val macroIdBody = macroId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+                val valorBody = valorLectura.toRequestBody("text/plain".toMediaTypeOrNull())
+                val obsBody = observacion?.toRequestBody("text/plain".toMediaTypeOrNull())
 
-            val response = api.enviarLectura(
-                apiToken = tokenBody,
-                macroId = macroIdBody,
-                valorLectura = valorBody,
-                observacion = obsBody,
-                fotos = fotoParts
-            )
-
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null && body.success) {
-                    // Guardar localmente como sincronizada
-                    guardarLecturaLocal(macroId, valorLectura, observacion, fotoPaths, true)
-                    NetworkResult.Success(body)
-                } else {
-                    NetworkResult.Error(body?.message ?: "Error al enviar lectura")
+                val fotoParts = fotoPaths.mapIndexed { index, path ->
+                    val file = File(path)
+                    val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("fotos[$index]", file.name, requestFile)
                 }
-            } else {
-                // Guardar localmente como pendiente
-                guardarLecturaLocal(macroId, valorLectura, observacion, fotoPaths, false)
-                NetworkResult.Error("Error del servidor: ${response.code()}. Lectura guardada localmente.", response.code())
+
+                val response = api.enviarLectura(
+                    apiToken = tokenBody,
+                    medidorId = macroIdBody,
+                    valorLectura = valorBody,
+                    observacion = obsBody,
+                    fotos = fotoParts
+                )
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    // Envío exitoso: marcar como sincronizado
+                    lecturaDao.marcarComoSincronizada(lecturaId.toInt())
+                    return SyncStatus.EnviadoOk(response.body()!!)
+                } else {
+                    // Servidor rechazó: encolar para retry
+                    encolarParaSync(lecturaId.toInt())
+                    return SyncStatus.GuardadoLocal("Error del servidor. Se reintentará automáticamente.")
+                }
+            } catch (e: Exception) {
+                // Fallo de red: encolar
+                encolarParaSync(lecturaId.toInt())
+                return SyncStatus.GuardadoLocal("Sin conexión. Se enviará cuando haya internet.")
             }
-        } catch (e: Exception) {
-            // Sin conexión: guardar localmente
-            guardarLecturaLocal(macroId, valorLectura, observacion, fotoPaths, false)
-            NetworkResult.Error("Sin conexión. Lectura guardada localmente para sincronizar después.")
+        } else {
+            // Sin red: encolar para cuando haya conexión
+            encolarParaSync(lecturaId.toInt())
+            return SyncStatus.GuardadoLocal("Sin conexión. Se enviará automáticamente.")
         }
     }
 
     /**
+     * Encola un registro en la cola de sincronización y dispara WorkManager.
+     */
+    private suspend fun encolarParaSync(lecturaId: Int) {
+        val ahora = dateTimeFormat.format(Date())
+        val existente = syncQueueDao.buscarPorRegistro(TipoSync.LECTURA, lecturaId)
+        if (existente == null) {
+            syncQueueDao.insert(
+                SyncQueueEntity(
+                    tipo = TipoSync.LECTURA,
+                    registroId = lecturaId,
+                    estado = EstadoSync.PENDIENTE,
+                    fechaCreacion = ahora
+                )
+            )
+        }
+        // Disparar WorkManager inmediato
+        SyncWorker.ejecutarSincronizacionInmediata(context)
+    }
+
+    /**
      * Guarda una lectura en la base de datos local.
+     * @return ID del registro insertado.
      */
     private suspend fun guardarLecturaLocal(
         macroId: Int,
@@ -119,29 +164,23 @@ class LecturaRepository(context: Context) {
         observacion: String?,
         fotoPaths: List<String>,
         sincronizado: Boolean
-    ) {
+    ): Long {
         val lectura = Lectura(
             macroId = macroId,
             valorLectura = valorLectura,
             observacion = observacion,
-            fecha = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+            fecha = dateTimeFormat.format(Date()),
             fotosJson = fotoPaths.joinToString(","),
             sincronizado = sincronizado
         )
-        lecturaDao.insertLectura(lectura)
+        return lecturaDao.insertLectura(lectura)
     }
 
-    /**
-     * Cuenta las lecturas locales del día para un macro.
-     */
     suspend fun contarLecturasLocalesHoy(macroId: Int): Int {
         val hoy = dateFormat.format(Date())
         return lecturaDao.contarLecturasDelDia(macroId, hoy)
     }
 
-    /**
-     * Obtiene lecturas pendientes de sincronizar.
-     */
     suspend fun getLecturasPendientes(): List<Lectura> {
         return lecturaDao.getLecturasPendientes()
     }

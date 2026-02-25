@@ -18,6 +18,7 @@ import com.systemapp.daily.R
 import com.systemapp.daily.data.local.AppDatabase
 import com.systemapp.daily.data.location.GpsLocationManager
 import com.systemapp.daily.data.repository.SyncRepository
+import com.systemapp.daily.data.sync.SyncWorker
 import com.systemapp.daily.databinding.ActivityMainBinding
 import com.systemapp.daily.ui.firma.FirmaActivity
 import com.systemapp.daily.ui.home.HomeActivity
@@ -146,11 +147,24 @@ class MainActivity : AppCompatActivity() {
                 val macrosEjec = db.macroDao().contarEjecutados()
                 val revPend = db.ordenRevisionDao().contarPendientes()
                 val revEjec = db.ordenRevisionDao().contarEjecutados()
+                val syncPend = db.syncQueueDao().contarPendientesSync()
 
                 binding.tvMacrosPendientes.text = "$macrosPend pendientes"
                 binding.tvMacrosEjecutados.text = "$macrosEjec ejecutados"
                 binding.tvRevisionesPendientes.text = "$revPend pendientes"
                 binding.tvRevisionesEjecutados.text = "$revEjec ejecutados"
+
+                // Mostrar indicador de sync pendiente
+                if (syncPend > 0) {
+                    binding.tvLastSync.text = "$syncPend registros por sincronizar"
+                    binding.tvLastSync.setTextColor(getColor(R.color.warning))
+                } else {
+                    val lastSync = sessionManager.lastSyncDate
+                    if (lastSync != null) {
+                        binding.tvLastSync.text = getString(R.string.ultima_sync_formato, lastSync)
+                    }
+                    binding.tvLastSync.setTextColor(getColor(R.color.text_secondary))
+                }
             } catch (_: Exception) { }
         }
     }
@@ -196,6 +210,9 @@ class MainActivity : AppCompatActivity() {
                         .show()
 
                     loadCounts()
+
+                    // También disparar SyncWorker para la cola pendiente
+                    SyncWorker.ejecutarSincronizacionInmediata(this@MainActivity)
                 }
                 is NetworkResult.Error -> {
                     Toast.makeText(this@MainActivity, result.message, Toast.LENGTH_LONG).show()

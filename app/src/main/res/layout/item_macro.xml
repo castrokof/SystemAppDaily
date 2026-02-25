@@ -35,6 +35,14 @@
                 android:textColor="@color/primary" />
 
             <TextView
+                android:id="@+id/tvSyncStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/tvEstado"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

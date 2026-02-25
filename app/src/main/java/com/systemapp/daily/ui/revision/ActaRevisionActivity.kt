@@ -18,7 +18,7 @@ import com.systemapp.daily.data.model.ChecklistItem
 import com.systemapp.daily.data.model.EstadoCheck
 import com.systemapp.daily.databinding.ActivityActaRevisionBinding
 import com.systemapp.daily.utils.Constants
-import com.systemapp.daily.utils.NetworkResult
+import com.systemapp.daily.data.repository.RevisionRepository
 import com.systemapp.daily.utils.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -220,24 +220,30 @@ class ActaRevisionActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
-        viewModel.envioResult.observe(this) { result ->
-            when (result) {
-                is NetworkResult.Loading -> {
-                    binding.progressBarActa.visibility = View.VISIBLE
-                    binding.btnGenerarActa.isEnabled = false
-                }
-                is NetworkResult.Success -> {
-                    binding.progressBarActa.visibility = View.GONE
+        viewModel.isLoading.observe(this) { loading ->
+            binding.progressBarActa.visibility = if (loading) View.VISIBLE else View.GONE
+            binding.btnGenerarActa.isEnabled = !loading
+        }
+
+        viewModel.syncStatus.observe(this) { status ->
+            if (status == null) return@observe
+
+            when (status) {
+                is RevisionRepository.SyncStatus.EnviadoOk -> {
                     binding.btnGenerarActa.visibility = View.GONE
                     binding.btnImprimirActa.visibility = View.VISIBLE
-                    Toast.makeText(this, "Revisión y acta enviadas al servidor", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Enviado correctamente", Toast.LENGTH_SHORT).show()
                 }
-                is NetworkResult.Error -> {
-                    binding.progressBarActa.visibility = View.GONE
-                    // Aun si falla el envío, permitir imprimir (se guardó localmente)
+                is RevisionRepository.SyncStatus.GuardadoLocal -> {
+                    // Se guardó local, se enviará después. Permitir imprimir
                     binding.btnGenerarActa.visibility = View.GONE
                     binding.btnImprimirActa.visibility = View.VISIBLE
-                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, status.message, Toast.LENGTH_LONG).show()
+                }
+                is RevisionRepository.SyncStatus.Error -> {
+                    binding.btnGenerarActa.visibility = View.GONE
+                    binding.btnImprimirActa.visibility = View.VISIBLE
+                    Toast.makeText(this, status.message, Toast.LENGTH_LONG).show()
                 }
             }
         }

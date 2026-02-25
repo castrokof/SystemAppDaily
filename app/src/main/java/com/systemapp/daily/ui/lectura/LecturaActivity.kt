@@ -12,6 +12,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
+import com.systemapp.daily.R
+import com.systemapp.daily.data.repository.LecturaRepository
 import com.systemapp.daily.databinding.ActivityLecturaBinding
 import com.systemapp.daily.utils.Constants
 import com.systemapp.daily.utils.NetworkResult
@@ -130,29 +133,42 @@ class LecturaActivity : AppCompatActivity() {
                 }
                 is NetworkResult.Error -> {
                     binding.progressBar.visibility = View.GONE
-                    // Permitir continuar si falla la verificación
                 }
             }
         }
 
-        // Observar envío de lectura
-        viewModel.envioResult.observe(this) { result ->
-            when (result) {
-                is NetworkResult.Loading -> {
-                    binding.progressBar.visibility = View.VISIBLE
-                    binding.btnEnviarLectura.isEnabled = false
-                    binding.btnTomarFoto.isEnabled = false
+        // Observar estado de carga
+        viewModel.isLoading.observe(this) { loading ->
+            binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+            binding.btnEnviarLectura.isEnabled = !loading
+            binding.btnTomarFoto.isEnabled = !loading
+        }
+
+        // Observar resultado de sync
+        viewModel.syncStatus.observe(this) { status ->
+            if (status == null) return@observe
+
+            when (status) {
+                is LecturaRepository.SyncStatus.EnviadoOk -> {
+                    Snackbar.make(binding.root, "Enviado correctamente", Snackbar.LENGTH_SHORT)
+                        .setBackgroundTint(getColor(R.color.success))
+                        .show()
+                    // Dar tiempo para ver el Snackbar antes de cerrar
+                    binding.root.postDelayed({ finish() }, 1500)
                 }
-                is NetworkResult.Success -> {
-                    binding.progressBar.visibility = View.GONE
-                    Toast.makeText(this, "Lectura enviada correctamente", Toast.LENGTH_LONG).show()
-                    finish()
+                is LecturaRepository.SyncStatus.GuardadoLocal -> {
+                    Snackbar.make(binding.root, status.message, Snackbar.LENGTH_LONG)
+                        .setBackgroundTint(getColor(R.color.warning))
+                        .show()
+                    // Cerrar después de mostrar mensaje
+                    binding.root.postDelayed({ finish() }, 2000)
                 }
-                is NetworkResult.Error -> {
-                    binding.progressBar.visibility = View.GONE
+                is LecturaRepository.SyncStatus.Error -> {
+                    Snackbar.make(binding.root, status.message, Snackbar.LENGTH_LONG)
+                        .setBackgroundTint(getColor(R.color.error))
+                        .show()
                     binding.btnEnviarLectura.isEnabled = true
                     binding.btnTomarFoto.isEnabled = true
-                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
                 }
             }
         }

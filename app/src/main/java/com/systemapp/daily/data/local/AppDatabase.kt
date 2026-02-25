@@ -14,9 +14,10 @@ import com.systemapp.daily.data.model.*
         MacroEntity::class,
         RevisionEntity::class,
         HidraulicoEntity::class,
-        ListaEntity::class
+        ListaEntity::class,
+        SyncQueueEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -31,6 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ordenRevisionDao(): OrdenRevisionDao
     abstract fun hidraulicoDao(): HidraulicoDao
     abstract fun listaDao(): ListaDao
+    abstract fun syncQueueDao(): SyncQueueDao
 
     companion object {
         @Volatile

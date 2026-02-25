@@ -24,6 +24,8 @@ import com.systemapp.daily.ui.firma.FirmaActivity
 import com.systemapp.daily.ui.home.HomeActivity
 import com.systemapp.daily.ui.impresora.ImpresoraActivity
 import com.systemapp.daily.ui.login.LoginActivity
+import com.systemapp.daily.ui.macro.MacromedidoresActivity
+import com.systemapp.daily.ui.revision_v2.RevisionesActivity
 import com.systemapp.daily.utils.NetworkResult
 import com.systemapp.daily.utils.SessionManager
 import kotlinx.coroutines.launch
@@ -92,11 +94,11 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
                 R.id.nav_macromedidores -> {
-                    startActivity(Intent(this, HomeActivity::class.java))
+                    startActivity(Intent(this, MacromedidoresActivity::class.java))
                     true
                 }
                 R.id.nav_revisiones -> {
-                    Toast.makeText(this, "Módulo de revisiones: espere confirmación", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, RevisionesActivity::class.java))
                     true
                 }
                 R.id.nav_firma -> {
@@ -122,11 +124,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupDashboardCards() {
         binding.cardMacros.setOnClickListener {
-            startActivity(Intent(this, HomeActivity::class.java))
+            startActivity(Intent(this, MacromedidoresActivity::class.java))
         }
 
         binding.cardRevisiones.setOnClickListener {
-            Toast.makeText(this, "Módulo de revisiones: espere confirmación", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, RevisionesActivity::class.java))
         }
 
         binding.cardSync.setOnClickListener {

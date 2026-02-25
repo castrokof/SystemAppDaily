@@ -92,6 +92,28 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- Macromedidores Module -->
+        <activity
+            android:name=".ui.macro.MacromedidoresActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.macro.MacroLecturaActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- Revisiones V2 Module -->
+        <activity
+            android:name=".ui.revision_v2.RevisionesActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.revision_v2.RevisionWizardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- FileProvider para compartir fotos -->
         <provider
             android:name="androidx.core.content.FileProvider"

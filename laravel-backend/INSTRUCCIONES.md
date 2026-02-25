@@ -1,148 +1,225 @@
-# Backend Laravel 5 - Macromedidores
+# Backend Laravel 5 - Macromedidores + Revisiones
 
 ## Estructura de archivos - Donde copiar cada archivo
 
 ```
 tu-proyecto-laravel/
-├── database/migrations/
-│   └── 2024_01_01_000001_create_macromedidores_table.php
+├── database/
+│   ├── migrations/
+│   │   ├── 2024_01_01_000001_create_macromedidores_table.php
+│   │   └── 2024_01_01_000002_create_revisiones_table.php
+│   └── seeds/
+│       └── ListasParametrosSeeder.php
 │
 ├── app/
-│   ├── Macromedidor.php              (Model)
-│   ├── MacroFoto.php                 (Model)
+│   ├── Macromedidor.php
+│   ├── MacroFoto.php
+│   ├── OrdenRevision.php
+│   ├── CensoHidraulico.php
+│   ├── RevisionFoto.php
+│   ├── ListaParametro.php
 │   └── Http/Controllers/
-│       ├── MacromedidorController.php     (Web CRUD)
+│       ├── MacromedidorController.php
+│       ├── RevisionController.php
 │       └── Api/
-│           └── MacromedidorApiController.php  (API Movil)
+│           ├── MacromedidorApiController.php
+│           └── RevisionApiController.php
 │
-├── resources/views/macromedidores/
-│   ├── index.blade.php
-│   ├── create.blade.php
-│   ├── show.blade.php
-│   └── edit.blade.php
+├── resources/views/
+│   ├── macromedidores/
+│   │   ├── index.blade.php
+│   │   ├── create.blade.php
+│   │   ├── show.blade.php
+│   │   └── edit.blade.php
+│   └── revisiones/
+│       ├── criticas.blade.php    (supervisor selecciona lecturas)
+│       ├── index.blade.php       (listado ordenes generadas)
+│       ├── show.blade.php        (detalle con resultado wizard)
+│       └── listas.blade.php      (ver listas parametros)
 │
 └── routes/ (o app/Http/routes.php en Laravel 5.2)
 ```
 
 ## Pasos de instalacion
 
-### 1. Copiar la migracion
-```
-cp migrations/... database/migrations/
-```
-Ejecutar:
+### 1. Copiar las migraciones y ejecutar
 ```bash
+cp migrations/*.php database/migrations/
 php artisan migrate
 ```
 
-### 2. Copiar los Models
-```
-cp models/Macromedidor.php app/Macromedidor.php
-cp models/MacroFoto.php app/MacroFoto.php
+### 2. Copiar el seeder y ejecutar
+```bash
+cp seeders/ListasParametrosSeeder.php database/seeds/
+php artisan db:seed --class=ListasParametrosSeeder
 ```
 
-### 3. Copiar los Controllers
+### 3. Copiar los Models
+```bash
+cp models/Macromedidor.php app/
+cp models/MacroFoto.php app/
+cp models/OrdenRevision.php app/
+cp models/CensoHidraulico.php app/
+cp models/RevisionFoto.php app/
+cp models/ListaParametro.php app/
 ```
+
+### 4. Copiar los Controllers
+```bash
 cp controllers/MacromedidorController.php app/Http/Controllers/
+cp controllers/RevisionController.php app/Http/Controllers/
 mkdir -p app/Http/Controllers/Api
 cp controllers/MacromedidorApiController.php app/Http/Controllers/Api/
+cp controllers/RevisionApiController.php app/Http/Controllers/Api/
 ```
 
-### 4. Agregar las rutas
+### 5. Agregar las rutas
 
-**Si tu Laravel tiene `routes/web.php`:**
-Copiar el contenido de `routes/routes_web.php` en `routes/web.php`
-Copiar el contenido de `routes/routes_api.php` en `routes/api.php`
+**Si tu Laravel tiene `routes/web.php` y `routes/api.php`:**
+- Copiar contenido de `routes/routes_web.php` en `routes/web.php`
+- Copiar contenido de `routes/routes_revisiones_web.php` en `routes/web.php`
+- Copiar contenido de `routes/routes_api.php` en `routes/api.php`
+- Copiar contenido de `routes/routes_revisiones_api.php` en `routes/api.php`
 
 **Si tu Laravel usa `app/Http/routes.php` (Laravel 5.2 o menor):**
 ```php
-// Agregar en app/Http/routes.php
-
-// Web
+// ======= MACROMEDIDORES =======
 Route::resource('macromedidores', 'MacromedidorController');
 Route::post('macromedidores/{id}/resetear', 'MacromedidorController@resetear');
 
-// API
+// ======= REVISIONES =======
+Route::get('revisiones/criticas', 'RevisionController@criticas')->name('revisiones.criticas');
+Route::post('revisiones/generar', 'RevisionController@generar')->name('revisiones.generar');
+Route::post('revisiones/{id}/reasignar', 'RevisionController@reasignar')->name('revisiones.reasignar');
+Route::get('revisiones', 'RevisionController@index')->name('revisiones.index');
+Route::get('revisiones/{id}', 'RevisionController@show')->name('revisiones.show');
+Route::delete('revisiones/{id}', 'RevisionController@destroy')->name('revisiones.destroy');
+Route::get('listas-parametros', 'RevisionController@listas')->name('listas.index');
+
+// ======= API =======
 Route::group(['prefix' => 'api'], function () {
+    // Macromedidores
     Route::get('ordenesMacro', 'Api\MacromedidorApiController@ordenesMacro');
     Route::post('macromedidoresMovil', 'Api\MacromedidorApiController@enviarMacro');
+    // Revisiones
+    Route::get('ordenesRevision', 'Api\RevisionApiController@ordenesRevision');
+    Route::post('revisionesMovilV2', 'Api\RevisionApiController@enviarRevisionV2');
+    Route::get('listasParametros', 'Api\RevisionApiController@listasParametros');
 });
 ```
 
-### 5. Crear carpeta de uploads
+### 6. Crear carpetas de uploads
 ```bash
 mkdir -p public/uploads/macros
-chmod 775 public/uploads/macros
+mkdir -p public/uploads/revisiones/fotos
+mkdir -p public/uploads/revisiones/firmas
+mkdir -p public/uploads/revisiones/actas
+chmod -R 775 public/uploads
 ```
 
-### 6. Copiar las vistas
-```
+### 7. Copiar las vistas
+```bash
 mkdir -p resources/views/macromedidores
+mkdir -p resources/views/revisiones
 cp views/macromedidores/*.blade.php resources/views/macromedidores/
+cp views/revisiones/*.blade.php resources/views/revisiones/
 ```
+
+---
+
+## Flujo de trabajo
+
+```
+LECTURAS (ordenescu)
+    |
+    | Critica != "CONSUMO NORMAL"
+    v
+SUPERVISOR (/revisiones/criticas)
+    |
+    | Selecciona lecturas + asigna revisor
+    | POST /revisiones/generar
+    v
+ORDENES DE REVISION (ordenes_revision)
+    |
+    | Estado: PENDIENTE
+    | Se descargan a la app: GET /api/ordenesRevision
+    v
+APP MOVIL (wizard 5 pasos)
+    |
+    | Revisor ejecuta en campo
+    | POST /api/revisionesMovilV2
+    v
+REVISION EJECUTADA
+    |
+    | Estado: EJECUTADO + sincronizado
+    | Ver en: /revisiones/{id}
+    v
+DETALLE con fotos, firma, censo, GPS
+```
+
+---
 
 ## Endpoints API
 
+### Macromedidores
+
 | Metodo | URL | Descripcion |
 |--------|-----|-------------|
-| GET | `/api/ordenesMacro?api_token=xxx` | Descarga ordenes del usuario |
-| POST | `/api/macromedidoresMovil` | Sube lectura con fotos (multipart) |
+| GET | `/api/ordenesMacro?api_token=xxx` | Descarga ordenes macro |
+| POST | `/api/macromedidoresMovil` | Sube lectura + fotos |
 
-### GET ordenesMacro
+### Revisiones
+
+| Metodo | URL | Descripcion |
+|--------|-----|-------------|
+| GET | `/api/ordenesRevision?api_token=xxx` | Descarga ordenes revision |
+| POST | `/api/revisionesMovilV2` | Sube revision ejecutada (wizard completo) |
+| GET | `/api/listasParametros?api_token=xxx` | Descarga listas para dropdowns |
+
+### POST revisionesMovilV2 (campos)
 ```
-GET /api/ordenesMacro?api_token=abc123
-```
-Response:
-```json
-[
-  {
-    "id_orden": 1,
-    "codigo_macro": "MAC-001",
-    "ubicacion": "Calle 5 #12-30",
-    "lectura_anterior": 12500,
-    "estado": "PENDIENTE",
-    "lectura_actual": null,
-    "observacion": null,
-    "ruta_fotos": null,
-    "gps_latitud_lectura": null,
-    "gps_longitud_lectura": null,
-    "fecha_lectura": null,
-    "sincronizado": false
-  }
-]
+api_token, id_orden, codigo_predio,
+estado_acometida, estado_sellos,
+nombre_atiende, tipo_documento, documento,
+num_familias, num_personas,
+motivo_revision, motivo_detalle, generalidades,
+censo_hidraulico_json (JSON array),
+gps_latitud, gps_longitud,
+fotos[] (archivos), firma_cliente (archivo), acta_pdf (archivo)
 ```
 
-### POST macromedidoresMovil
-```
-POST /api/macromedidoresMovil
-Content-Type: multipart/form-data
-
-api_token: abc123
-id_orden: 1
-lectura_actual: 13200
-observacion: Sin novedad
-gps_latitud: 7.123456
-gps_longitud: -73.123456
-fotos[0]: (archivo imagen)
-fotos[1]: (archivo imagen)
-```
-Response:
-```json
-{
-  "success": true,
-  "message": "Lectura recibida correctamente",
-  "id": 1
-}
-```
+---
 
 ## URLs Web
 
+### Macromedidores
 | URL | Descripcion |
 |-----|-------------|
 | `/macromedidores` | Listado con filtros |
 | `/macromedidores/create` | Formulario crear macro |
 | `/macromedidores/{id}` | Ver detalle + fotos + lectura |
 | `/macromedidores/{id}/edit` | Editar datos basicos |
+
+### Revisiones
+| URL | Descripcion |
+|-----|-------------|
+| `/revisiones/criticas` | Supervisor: ver lecturas criticas y generar ordenes |
+| `/revisiones` | Listado ordenes de revision |
+| `/revisiones/{id}` | Detalle: 5 pasos del wizard, fotos, firma, censo, GPS |
+| `/listas-parametros` | Ver/verificar listas de parametros |
+
+---
+
+## Listas de Parametros (Seeder)
+
+| Tipo | Valores |
+|------|---------|
+| MOTIVOS | DESVIACION_BAJA, DESVIACION_ALTA, FRAUDE, MEDIDOR_DANADO, SIN_LECTURA, OTRO |
+| ACOMETIDA | BUENA, REGULAR, MALA, DIRECTA, NO_VISIBLE |
+| SELLOS | INTACTOS, ROTOS, SIN_SELLOS, MANIPULADOS |
+| TIPO_DOCUMENTO | CC, CE, TI, NIT, PP |
+| TIPO_PUNTO | GRIFO, SANITARIO, DUCHA, LAVAMANOS, LAVAPLATOS, LAVADERO, TANQUE, CALENTADOR, OTRO |
+| SURTE | ACUEDUCTO, POZO, TANQUE_ELEVADO, PILA_PUBLICA, OTRO |
 
 ## Nota sobre las vistas
 

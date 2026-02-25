@@ -45,9 +45,9 @@ class CameraActivity : AppCompatActivity() {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
-            val preview = Preview.Builder().build().also {
-                it.surfaceProvider = binding.previewView.surfaceProvider
-            }
+            val preview = Preview.Builder().build()
+            // ✅ Línea corregida:
+            preview.setSurfaceProvider(binding.previewView.getSurfaceProvider())
 
             imageCapture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)

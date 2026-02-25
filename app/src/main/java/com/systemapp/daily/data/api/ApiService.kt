@@ -11,7 +11,7 @@ interface ApiService {
     // =============================================
     // LOGIN
     // =============================================
-    @GET("loginMovil1")
+    @POST("loginMovil1")
     suspend fun login(
         @Query("usuario") usuario: String,
         @Query("password") password: String

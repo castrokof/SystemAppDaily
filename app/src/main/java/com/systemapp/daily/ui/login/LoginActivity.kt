@@ -7,10 +7,15 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.systemapp.daily.data.local.AppDatabase
+import com.systemapp.daily.data.model.UserEntity
 import com.systemapp.daily.databinding.ActivityLoginBinding
 import com.systemapp.daily.ui.main.MainActivity
 import com.systemapp.daily.utils.NetworkResult
 import com.systemapp.daily.utils.SessionManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -75,6 +80,15 @@ class LoginActivity : AppCompatActivity() {
                             email = user.email,
                             empresa = user.empresa
                         )
+                        // Guardar usuario en Room
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val userEntity = UserEntity(
+                                id = user.id,
+                                nombre = user.nombre,
+                                tokenSesion = user.apiToken
+                            )
+                            AppDatabase.getDatabase(this@LoginActivity).userDao().insert(userEntity)
+                        }
                         Toast.makeText(this, "Bienvenido, ${user.nombre}", Toast.LENGTH_SHORT).show()
                         navigateToHome()
                     } else {

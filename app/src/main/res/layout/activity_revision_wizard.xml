@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary"
+        app:titleTextColor="@android:color/white"
+        app:subtitleTextColor="@android:color/white"
+        app:navigationIconTint="@android:color/white" />
+
+    <!-- Progress Steps -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center"
+        android:background="@color/surface">
+
+        <TextView android:id="@+id/tvStep1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="1.Registro" android:textSize="11sp" android:textAlignment="center" android:textStyle="bold" />
+        <TextView android:id="@+id/tvStep2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="2.Predio" android:textSize="11sp" android:textAlignment="center" />
+        <TextView android:id="@+id/tvStep3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="3.Familia" android:textSize="11sp" android:textAlignment="center" />
+        <TextView android:id="@+id/tvStep4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="4.Medidor" android:textSize="11sp" android:textAlignment="center" />
+        <TextView android:id="@+id/tvStep5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="5.Fin" android:textSize="11sp" android:textAlignment="center" />
+
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progressSteps"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:max="5"
+        android:progress="1"
+        android:progressTint="@color/primary" />
+
+    <!-- ViewPager2 -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Navigation Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="@color/surface"
+        android:elevation="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAnterior"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Anterior"
+            android:visibility="invisible"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSiguiente"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Siguiente"
+            app:cornerRadius="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

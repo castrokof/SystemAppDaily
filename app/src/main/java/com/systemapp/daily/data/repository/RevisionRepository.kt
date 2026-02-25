@@ -3,8 +3,13 @@ package com.systemapp.daily.data.repository
 import android.content.Context
 import com.systemapp.daily.data.api.RetrofitClient
 import com.systemapp.daily.data.local.AppDatabase
+import com.systemapp.daily.data.model.EstadoSync
 import com.systemapp.daily.data.model.Revision
 import com.systemapp.daily.data.model.RevisionResponse
+import com.systemapp.daily.data.model.SyncQueueEntity
+import com.systemapp.daily.data.model.TipoSync
+import com.systemapp.daily.data.network.NetworkMonitor
+import com.systemapp.daily.data.sync.SyncWorker
 import com.systemapp.daily.utils.NetworkResult
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -15,14 +20,27 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class RevisionRepository(context: Context) {
+class RevisionRepository(private val context: Context) {
 
     private val api = RetrofitClient.apiService
-    private val revisionDao = AppDatabase.getDatabase(context).revisionDao()
+    private val db = AppDatabase.getDatabase(context)
+    private val revisionDao = db.revisionDao()
+    private val syncQueueDao = db.syncQueueDao()
+    private val networkMonitor = NetworkMonitor.getInstance(context)
+    private val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
     /**
-     * Envía una revisión con fotos y acta PDF al servidor.
-     * Los fotoPaths pueden incluir un archivo PDF al final (el acta firmada).
+     * Resultado del envío con info de sync.
+     */
+    sealed class SyncStatus {
+        data class EnviadoOk(val response: RevisionResponse) : SyncStatus()
+        data class GuardadoLocal(val message: String) : SyncStatus()
+        data class Error(val message: String) : SyncStatus()
+    }
+
+    /**
+     * Guarda revisión localmente, intenta enviar inmediatamente.
+     * Si no hay red o falla, encola para WorkManager.
      */
     suspend fun enviarRevision(
         apiToken: String,
@@ -36,60 +54,82 @@ class RevisionRepository(context: Context) {
         longitud: Double?,
         fotoPaths: List<String>,
         usuario: String
-    ): NetworkResult<RevisionResponse> {
-        return try {
-            val tokenBody = apiToken.toRequestBody("text/plain".toMediaTypeOrNull())
-            val medidorIdBody = medidorId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-            val checklistBody = checklistJson.toRequestBody("text/plain".toMediaTypeOrNull())
-            val obsBody = observacion?.toRequestBody("text/plain".toMediaTypeOrNull())
-            val latBody = latitud?.toString()?.toRequestBody("text/plain".toMediaTypeOrNull())
-            val lonBody = longitud?.toString()?.toRequestBody("text/plain".toMediaTypeOrNull())
+    ): SyncStatus {
+        // 1. SIEMPRE guardar localmente primero
+        val revisionId = guardarRevisionLocal(
+            medidorId, refMedidor, suscriptor, direccion,
+            checklistJson, observacion, latitud, longitud,
+            fotoPaths, usuario, false
+        )
 
-            // Separar fotos (imágenes) del acta PDF
-            val imagePaths = fotoPaths.filter { !it.endsWith(".pdf") }
-            val pdfPath = fotoPaths.firstOrNull { it.endsWith(".pdf") }
+        // 2. Si hay conexión, intentar envío inmediato
+        if (networkMonitor.isConnected()) {
+            try {
+                val textPlain = "text/plain".toMediaTypeOrNull()
+                val tokenBody = apiToken.toRequestBody(textPlain)
+                val medidorIdBody = medidorId.toString().toRequestBody(textPlain)
+                val checklistBody = checklistJson.toRequestBody(textPlain)
+                val obsBody = observacion?.toRequestBody(textPlain)
+                val latBody = latitud?.toString()?.toRequestBody(textPlain)
+                val lonBody = longitud?.toString()?.toRequestBody(textPlain)
 
-            val fotoParts = imagePaths.mapIndexed { index, path ->
-                val file = File(path)
-                val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                MultipartBody.Part.createFormData("fotos[$index]", file.name, requestFile)
-            }
+                val imagePaths = fotoPaths.filter { !it.endsWith(".pdf") }
+                val pdfPath = fotoPaths.firstOrNull { it.endsWith(".pdf") }
 
-            // Acta PDF como parte separada
-            val actaPdfPart = pdfPath?.let { path ->
-                val file = File(path)
-                val requestFile = file.asRequestBody("application/pdf".toMediaTypeOrNull())
-                MultipartBody.Part.createFormData("acta_pdf", file.name, requestFile)
-            }
-
-            val response = api.enviarRevision(
-                apiToken = tokenBody,
-                medidorId = medidorIdBody,
-                checklistJson = checklistBody,
-                observacion = obsBody,
-                latitud = latBody,
-                longitud = lonBody,
-                fotos = fotoParts,
-                actaPdf = actaPdfPart
-            )
-
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null && body.success) {
-                    guardarRevisionLocal(medidorId, refMedidor, suscriptor, direccion, checklistJson, observacion, latitud, longitud, fotoPaths, usuario, true)
-                    NetworkResult.Success(body)
-                } else {
-                    guardarRevisionLocal(medidorId, refMedidor, suscriptor, direccion, checklistJson, observacion, latitud, longitud, fotoPaths, usuario, false)
-                    NetworkResult.Error(body?.message ?: "Error al enviar revisión")
+                val fotoParts = imagePaths.mapIndexed { index, path ->
+                    val file = File(path)
+                    val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("fotos[$index]", file.name, requestFile)
                 }
-            } else {
-                guardarRevisionLocal(medidorId, refMedidor, suscriptor, direccion, checklistJson, observacion, latitud, longitud, fotoPaths, usuario, false)
-                NetworkResult.Error("Error del servidor: ${response.code()}. Revisión guardada localmente.", response.code())
+
+                val actaPdfPart = pdfPath?.let { path ->
+                    val file = File(path)
+                    val requestFile = file.asRequestBody("application/pdf".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("acta_pdf", file.name, requestFile)
+                }
+
+                val response = api.enviarRevision(
+                    apiToken = tokenBody,
+                    medidorId = medidorIdBody,
+                    checklistJson = checklistBody,
+                    observacion = obsBody,
+                    latitud = latBody,
+                    longitud = lonBody,
+                    fotos = fotoParts,
+                    actaPdf = actaPdfPart
+                )
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    revisionDao.marcarComoSincronizada(revisionId.toInt())
+                    return SyncStatus.EnviadoOk(response.body()!!)
+                } else {
+                    encolarParaSync(revisionId.toInt())
+                    return SyncStatus.GuardadoLocal("Error del servidor. Se reintentará automáticamente.")
+                }
+            } catch (e: Exception) {
+                encolarParaSync(revisionId.toInt())
+                return SyncStatus.GuardadoLocal("Sin conexión. Se enviará cuando haya internet.")
             }
-        } catch (e: Exception) {
-            guardarRevisionLocal(medidorId, refMedidor, suscriptor, direccion, checklistJson, observacion, latitud, longitud, fotoPaths, usuario, false)
-            NetworkResult.Error("Sin conexión. Revisión guardada localmente.")
+        } else {
+            encolarParaSync(revisionId.toInt())
+            return SyncStatus.GuardadoLocal("Sin conexión. Se enviará automáticamente.")
         }
+    }
+
+    private suspend fun encolarParaSync(revisionId: Int) {
+        val ahora = dateTimeFormat.format(Date())
+        val existente = syncQueueDao.buscarPorRegistro(TipoSync.REVISION, revisionId)
+        if (existente == null) {
+            syncQueueDao.insert(
+                SyncQueueEntity(
+                    tipo = TipoSync.REVISION,
+                    registroId = revisionId,
+                    estado = EstadoSync.PENDIENTE,
+                    fechaCreacion = ahora
+                )
+            )
+        }
+        SyncWorker.ejecutarSincronizacionInmediata(context)
     }
 
     private suspend fun guardarRevisionLocal(
@@ -97,7 +137,7 @@ class RevisionRepository(context: Context) {
         checklistJson: String, observacion: String?,
         latitud: Double?, longitud: Double?,
         fotoPaths: List<String>, usuario: String, sincronizado: Boolean
-    ) {
+    ): Long {
         val revision = Revision(
             medidorId = medidorId,
             refMedidor = refMedidor,
@@ -108,11 +148,11 @@ class RevisionRepository(context: Context) {
             latitud = latitud,
             longitud = longitud,
             fotosJson = fotoPaths.joinToString(","),
-            fecha = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+            fecha = dateTimeFormat.format(Date()),
             usuario = usuario,
             sincronizado = sincronizado
         )
-        revisionDao.insertRevision(revision)
+        return revisionDao.insertRevision(revision)
     }
 
     suspend fun getRevisionesPendientes(): List<Revision> {

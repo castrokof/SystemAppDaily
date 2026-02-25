@@ -5,17 +5,20 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.systemapp.daily.data.model.RevisionResponse
 import com.systemapp.daily.data.repository.RevisionRepository
-import com.systemapp.daily.utils.NetworkResult
 import kotlinx.coroutines.launch
 
 class RevisionViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = RevisionRepository(application)
 
-    private val _envioResult = MutableLiveData<NetworkResult<RevisionResponse>>()
-    val envioResult: LiveData<NetworkResult<RevisionResponse>> = _envioResult
+    // Resultado del envío con estado de sync
+    private val _syncStatus = MutableLiveData<RevisionRepository.SyncStatus?>()
+    val syncStatus: LiveData<RevisionRepository.SyncStatus?> = _syncStatus
+
+    // Estado de carga
+    private val _isLoading = MutableLiveData(false)
+    val isLoading: LiveData<Boolean> = _isLoading
 
     fun enviarRevision(
         apiToken: String,
@@ -30,9 +33,10 @@ class RevisionViewModel(application: Application) : AndroidViewModel(application
         fotoPaths: List<String>,
         usuario: String
     ) {
-        _envioResult.value = NetworkResult.Loading
+        _isLoading.value = true
+        _syncStatus.value = null
         viewModelScope.launch {
-            _envioResult.value = repository.enviarRevision(
+            val result = repository.enviarRevision(
                 apiToken = apiToken,
                 medidorId = medidorId,
                 refMedidor = refMedidor,
@@ -45,6 +49,8 @@ class RevisionViewModel(application: Application) : AndroidViewModel(application
                 fotoPaths = fotoPaths,
                 usuario = usuario
             )
+            _isLoading.value = false
+            _syncStatus.value = result
         }
     }
 }

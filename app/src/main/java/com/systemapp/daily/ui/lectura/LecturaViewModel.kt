@@ -6,7 +6,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.systemapp.daily.data.model.CheckLecturaResponse
-import com.systemapp.daily.data.model.LecturaResponse
 import com.systemapp.daily.data.repository.LecturaRepository
 import com.systemapp.daily.utils.NetworkResult
 import kotlinx.coroutines.launch
@@ -23,9 +22,13 @@ class LecturaViewModel(application: Application) : AndroidViewModel(application)
     private val _checkResult = MutableLiveData<NetworkResult<CheckLecturaResponse>>()
     val checkResult: LiveData<NetworkResult<CheckLecturaResponse>> = _checkResult
 
-    // Resultado del envío de lectura
-    private val _envioResult = MutableLiveData<NetworkResult<LecturaResponse>>()
-    val envioResult: LiveData<NetworkResult<LecturaResponse>> = _envioResult
+    // Resultado del envío con estado de sync
+    private val _syncStatus = MutableLiveData<LecturaRepository.SyncStatus?>()
+    val syncStatus: LiveData<LecturaRepository.SyncStatus?> = _syncStatus
+
+    // Estado de carga
+    private val _isLoading = MutableLiveData(false)
+    val isLoading: LiveData<Boolean> = _isLoading
 
     fun agregarFoto(path: String) {
         val lista = _fotos.value ?: mutableListOf()
@@ -58,15 +61,18 @@ class LecturaViewModel(application: Application) : AndroidViewModel(application)
     ) {
         val fotoPaths = _fotos.value ?: emptyList()
 
-        _envioResult.value = NetworkResult.Loading
+        _isLoading.value = true
+        _syncStatus.value = null
         viewModelScope.launch {
-            _envioResult.value = repository.enviarLectura(
-                token = token,
+            val result = repository.enviarLectura(
+                apiToken = token,
                 macroId = macroId,
                 valorLectura = valorLectura,
                 observacion = observacion,
                 fotoPaths = fotoPaths
             )
+            _isLoading.value = false
+            _syncStatus.value = result
         }
     }
 }

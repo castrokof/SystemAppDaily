@@ -100,21 +100,18 @@ class OrdenRevision extends Model
 
     /**
      * Crear una orden de revision a partir de una lectura critica (ordenescu).
+     *
+     * Flujo: RevisionController@generar() llama este metodo para cada lectura
+     * marcada con Coordenada='generar'.
+     *
+     * El motivo se determina automaticamente desde el campo Critica de la lectura,
+     * con fallback a calculo por consumo/promedio.
      */
     public static function crearDesdeLectura($lectura, $usuarioId, $motivoRevision = null)
     {
-        // Determinar motivo automaticamente segun la critica
+        // Determinar motivo automaticamente segun el campo Critica de la lectura
         if (!$motivoRevision) {
-            $consumo = intval($lectura->Cons_Act);
-            $promedio = intval($lectura->Promedio);
-
-            if ($consumo < 0 || ($promedio > 0 && $consumo < $promedio * 0.5)) {
-                $motivoRevision = 'DESVIACION_BAJA';
-            } elseif ($promedio > 0 && $consumo > $promedio * 2) {
-                $motivoRevision = 'DESVIACION_ALTA';
-            } else {
-                $motivoRevision = 'OTRO';
-            }
+            $motivoRevision = self::determinarMotivo($lectura);
         }
 
         return self::create([
@@ -133,6 +130,52 @@ class OrdenRevision extends Model
             'motivo_revision'    => $motivoRevision,
             'usuario_id'         => $usuarioId,
         ]);
+    }
+
+    /**
+     * Determinar motivo de revision desde el campo Critica de la lectura.
+     * Primero intenta mapear por texto de critica, luego por calculo numerico.
+     */
+    public static function determinarMotivo($lectura)
+    {
+        $critica = strtoupper(trim($lectura->Critica ?? ''));
+
+        // Mapeo por texto de critica (palabras clave comunes)
+        $mapeo = [
+            'BAJO'      => 'DESVIACION_BAJA',
+            'BAJA'      => 'DESVIACION_BAJA',
+            'ALTO'      => 'DESVIACION_ALTA',
+            'ALTA'      => 'DESVIACION_ALTA',
+            'EXCESO'    => 'DESVIACION_ALTA',
+            'DETENIDO'  => 'MEDIDOR_DANADO',
+            'DANADO'    => 'MEDIDOR_DANADO',
+            'DAÑADO'    => 'MEDIDOR_DANADO',
+            'AVERIADO'  => 'MEDIDOR_DANADO',
+            'FRAUDE'    => 'FRAUDE',
+            'IRREGULAR' => 'FRAUDE',
+            'DIRECTA'   => 'FRAUDE',
+            'IMPEDIDO'  => 'SIN_LECTURA',
+            'SIN LECTURA' => 'SIN_LECTURA',
+            'CERRADO'   => 'SIN_LECTURA',
+        ];
+
+        foreach ($mapeo as $palabra => $motivo) {
+            if (strpos($critica, $palabra) !== false) {
+                return $motivo;
+            }
+        }
+
+        // Fallback: calculo por consumo vs promedio
+        $consumo = intval($lectura->Cons_Act);
+        $promedio = intval($lectura->Promedio);
+
+        if ($consumo < 0 || ($promedio > 0 && $consumo < $promedio * 0.5)) {
+            return 'DESVIACION_BAJA';
+        } elseif ($promedio > 0 && $consumo > $promedio * 2) {
+            return 'DESVIACION_ALTA';
+        }
+
+        return 'OTRO';
     }
 
     /**

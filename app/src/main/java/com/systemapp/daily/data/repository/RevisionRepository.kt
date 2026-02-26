@@ -21,7 +21,7 @@ import java.util.Locale
 
 class RevisionRepository(private val context: Context) {
 
-    private val api = RetrofitClient.apiService
+
     private val db = AppDatabase.getDatabase(context)
     private val revisionDao = db.revisionDao()
     private val syncQueueDao = db.syncQueueDao()
@@ -54,6 +54,7 @@ class RevisionRepository(private val context: Context) {
         fotoPaths: List<String>,
         usuario: String
     ): SyncStatus {
+        val api = RetrofitClient.getApiService(apiToken)
         // 1. SIEMPRE guardar localmente primero
         val revisionId = guardarRevisionLocal(
             medidorId, refMedidor, suscriptor, direccion,
@@ -65,7 +66,7 @@ class RevisionRepository(private val context: Context) {
         if (networkMonitor.isConnected()) {
             try {
                 val textPlain = "text/plain".toMediaTypeOrNull()
-                val tokenBody = apiToken.toRequestBody(textPlain)
+
                 val medidorIdBody = medidorId.toString().toRequestBody(textPlain)
                 val checklistBody = checklistJson.toRequestBody(textPlain)
                 val obsBody = observacion?.toRequestBody(textPlain)
@@ -88,7 +89,7 @@ class RevisionRepository(private val context: Context) {
                 }
 
                 val response = api.enviarRevision(
-                    apiToken = tokenBody,
+
                     medidorId = medidorIdBody,
                     checklistJson = checklistBody,
                     observacion = obsBody,

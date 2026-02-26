@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.systemapp.daily.data.model.CheckLecturaResponse
 import com.systemapp.daily.data.repository.LecturaRepository
 import com.systemapp.daily.utils.NetworkResult
+import com.systemapp.daily.utils.SessionManager
 import kotlinx.coroutines.launch
 
 class LecturaViewModel(application: Application) : AndroidViewModel(application) {
@@ -49,7 +50,9 @@ class LecturaViewModel(application: Application) : AndroidViewModel(application)
     fun checkPuedeLeer( macroId: Int) {
         _checkResult.value = NetworkResult.Loading
         viewModelScope.launch {
-            _checkResult.value = repository.checkPuedeLeer( macroId)
+            val sessionManager = SessionManager(getApplication())
+            val token = sessionManager.apiToken ?: ""
+            _checkResult.value = repository.checkPuedeLeer( token, macroId)
         }
     }
 

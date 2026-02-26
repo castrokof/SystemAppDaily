@@ -28,7 +28,7 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
     private val hidraulicoDao = db.hidraulicoDao()
     private val syncQueueDao = db.syncQueueDao()
     private val networkMonitor = NetworkMonitor.getInstance(application)
-    private val api = RetrofitClient.apiService
+
 
     // Orden being edited
     private val _orden = MutableLiveData<RevisionEntity?>()
@@ -160,6 +160,7 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
             val apiToken = sessionManager.apiToken
             if (apiToken != null && networkMonitor.isConnected()) {
                 try {
+                    val api = RetrofitClient.getApiService(apiToken)
                     val textPlain = "text/plain".toMediaTypeOrNull()
                     val fotoParts = fotoPaths.mapIndexedNotNull { index, path ->
                         val file = File(path)
@@ -180,7 +181,7 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
                     })
 
                     val response = api.enviarRevisionV2(
-                        apiToken = "Bearer $apiToken",
+
                         idOrden = currentOrden.idOrden.toString().toRequestBody(textPlain),
                         codigoPredio = currentOrden.codigoPredio.toRequestBody(textPlain),
                         estadoAcometida = estadoAcometida.ifBlank { null }?.toRequestBody(textPlain),

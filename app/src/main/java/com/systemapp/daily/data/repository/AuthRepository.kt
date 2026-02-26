@@ -9,7 +9,7 @@ import com.systemapp.daily.utils.NetworkResult
  */
 class AuthRepository {
 
-    private val api = RetrofitClient.apiService
+    private val api = RetrofitClient.apiServiceNoAuth
 
     /**
      * Login contra la API existente loginMovil1.

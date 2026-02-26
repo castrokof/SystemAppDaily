@@ -16,10 +16,11 @@ class HomeViewModel : ViewModel() {
     private val _medidores = MutableLiveData<NetworkResult<List<Medidor>>>()
     val medidores: LiveData<NetworkResult<List<Medidor>>> = _medidores
 
-    fun cargarMedidores(usuario: String) {
+    fun cargarMedidores(usuario: String,apiToken: String) {
+
         _medidores.value = NetworkResult.Loading
         viewModelScope.launch {
-            _medidores.value = repository.getMedidores(usuario)
+            _medidores.value = repository.getMedidores(apiToken, usuario)
         }
     }
 }

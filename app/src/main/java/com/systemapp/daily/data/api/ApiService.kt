@@ -7,9 +7,8 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
-
     // =============================================
-    // LOGIN
+    // LOGIN (PÚBLICO - SIN TOKEN)
     // =============================================
     @POST("loginMovil1")
     suspend fun login(
@@ -18,7 +17,7 @@ interface ApiService {
     ): Response<List<UserLogin>>
 
     // =============================================
-    // MEDIDORES
+    // MEDIDORES (CON TOKEN - HEADER)
     // =============================================
     @GET("medidoresout")
     suspend fun getMedidores(
@@ -26,19 +25,19 @@ interface ApiService {
     ): Response<List<Medidor>>
 
     // =============================================
-    // SINCRONIZACIÓN - Descarga
+    // SINCRONIZACIÓN - Descarga (CON TOKEN - HEADER)
     // =============================================
     @GET("ordenesMacro")
-    suspend fun getOrdenesMacro(@Header("Authorization") apiToken: String): Response<List<MacroEntity>>
+    suspend fun getOrdenesMacro(): Response<List<MacroEntity>>
 
     @GET("ordenesRevision")
-    suspend fun getOrdenesRevision(@Header("Authorization") apiToken: String): Response<List<RevisionEntity>>
+    suspend fun getOrdenesRevision(): Response<List<RevisionEntity>>
 
     @GET("listasParametros")
-    suspend fun getListasParametros(@Header("Authorization") apiToken: String): Response<List<ListaEntity>>
+    suspend fun getListasParametros(): Response<List<ListaEntity>>
 
     // =============================================
-    // LECTURAS - Legacy
+    // LECTURAS - Legacy (CON TOKEN - HEADER)
     // =============================================
     @GET("lecturasMovil/check")
     suspend fun checkLectura(
@@ -51,12 +50,12 @@ interface ApiService {
         @Part("medidor_id") medidorId: RequestBody,
         @Part("valor_lectura") valorLectura: RequestBody,
         @Part("observacion") observacion: RequestBody?,
-        @Part fotos: List<MultipartBody.Part>,
-        apiToken: RequestBody
+        @Part fotos: List<MultipartBody.Part>
+        // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<LecturaResponse>
 
     // =============================================
-    // MACROS - Subida
+    // MACROS - Subida (CON TOKEN - HEADER)
     // =============================================
     @Multipart
     @POST("macromedidoresMovil")
@@ -66,12 +65,12 @@ interface ApiService {
         @Part("observacion") observacion: RequestBody?,
         @Part("gps_latitud") gpsLatitud: RequestBody?,
         @Part("gps_longitud") gpsLongitud: RequestBody?,
-        @Part fotos: List<MultipartBody.Part>,
-        apiToken: RequestBody
+        @Part fotos: List<MultipartBody.Part>
+        // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<SyncResponse>
 
     // =============================================
-    // REVISIONES - Subida v2
+    // REVISIONES - Subida v2 (CON TOKEN - HEADER)
     // =============================================
     @Multipart
     @POST("revisionesMovil")
@@ -82,8 +81,8 @@ interface ApiService {
         @Part("latitud") latitud: RequestBody?,
         @Part("longitud") longitud: RequestBody?,
         @Part fotos: List<MultipartBody.Part>,
-        @Part actaPdf: MultipartBody.Part?,
-        apiToken: RequestBody
+        @Part actaPdf: MultipartBody.Part?
+        // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<RevisionResponse>
 
     @Multipart
@@ -106,7 +105,7 @@ interface ApiService {
         @Part("gps_longitud") gpsLongitud: RequestBody?,
         @Part fotos: List<MultipartBody.Part>,
         @Part firmaCliente: MultipartBody.Part?,
-        @Part actaPdf: MultipartBody.Part?,
-        apiToken: RequestBody
+        @Part actaPdf: MultipartBody.Part?
+        // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<SyncResponse>
 }

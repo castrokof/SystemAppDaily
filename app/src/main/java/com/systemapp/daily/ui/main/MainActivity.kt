@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         sessionManager = SessionManager(this)
-        syncRepository = SyncRepository(this)
+        syncRepository = SyncRepository(this, sessionManager.apiToken ?: "")
         gpsManager = GpsLocationManager.getInstance(this)
 
         setupToolbar()
@@ -194,12 +194,14 @@ class MainActivity : AppCompatActivity() {
             navigateToLogin()
             return
         }
+        // ✅ Pasar token al crear el repository
+        val syncRepository = SyncRepository(this, apiToken)
 
         binding.progressSync.visibility = View.VISIBLE
         binding.cardSync.isEnabled = false
 
         lifecycleScope.launch {
-            val result = syncRepository.sincronizar(apiToken)
+            val result = syncRepository.sincronizar()
             binding.progressSync.visibility = View.GONE
             binding.cardSync.isEnabled = true
 

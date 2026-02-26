@@ -28,7 +28,9 @@ import java.util.Locale
  */
 class LecturaRepository(private val context: Context) {
 
-    private val api = RetrofitClient.apiService
+
+
+
     private val db = AppDatabase.getDatabase(context)
     private val lecturaDao = db.lecturaDao()
     private val syncQueueDao = db.syncQueueDao()
@@ -40,6 +42,8 @@ class LecturaRepository(private val context: Context) {
      * Resultado del envío con info de sync.
      */
     sealed class SyncStatus {
+
+
         data class EnviadoOk(val response: LecturaResponse) : SyncStatus()
         data class GuardadoLocal(val message: String) : SyncStatus()
         data class Error(val message: String) : SyncStatus()
@@ -48,7 +52,9 @@ class LecturaRepository(private val context: Context) {
     /**
      * Verifica si el usuario puede tomar lectura de un macro hoy.
      */
-    suspend fun checkPuedeLeer( macroId: Int): NetworkResult<CheckLecturaResponse> {
+    suspend fun checkPuedeLeer(apiToken: String, macroId: Int): NetworkResult<CheckLecturaResponse> {
+
+        val api = RetrofitClient.getApiService(apiToken)
         return try {
             val response = api.checkLectura( macroId)
             if (response.isSuccessful) {
@@ -82,19 +88,23 @@ class LecturaRepository(private val context: Context) {
      * Retorna SyncStatus para feedback en UI.
      */
     suspend fun enviarLectura(
+
         apiToken: String,
+
         macroId: Int,
         valorLectura: String,
         observacion: String?,
         fotoPaths: List<String>
     ): SyncStatus {
+
+        val api = RetrofitClient.getApiService(apiToken)
         // 1. SIEMPRE guardar localmente primero
         val lecturaId = guardarLecturaLocal(macroId, valorLectura, observacion, fotoPaths, false)
 
         // 2. Si hay conexión, intentar envío inmediato
         if (networkMonitor.isConnected()) {
             try {
-                val tokenBody = apiToken.toRequestBody("text/plain".toMediaTypeOrNull())
+
                 val macroIdBody = macroId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
                 val valorBody = valorLectura.toRequestBody("text/plain".toMediaTypeOrNull())
                 val obsBody = observacion?.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -106,7 +116,7 @@ class LecturaRepository(private val context: Context) {
                 }
 
                 val response = api.enviarLectura(
-                    apiToken = tokenBody,
+
                     medidorId = macroIdBody,
                     valorLectura = valorBody,
                     observacion = obsBody,

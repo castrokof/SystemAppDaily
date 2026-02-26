@@ -3,6 +3,7 @@ package com.systemapp.daily.data.sync
 import android.content.Context
 import android.util.Log
 import androidx.work.*
+import com.systemapp.daily.data.api.ApiService
 import com.systemapp.daily.data.api.RetrofitClient
 import com.systemapp.daily.data.local.AppDatabase
 import com.systemapp.daily.data.model.EstadoSync
@@ -31,12 +32,19 @@ class SyncWorker(
     private val syncQueueDao = db.syncQueueDao()
     private val lecturaDao = db.lecturaDao()
     private val revisionDao = db.revisionDao()
-    private val api = RetrofitClient.apiService
+
+
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
     override suspend fun doWork(): Result {
+
+
+
         val sessionManager = SessionManager(applicationContext)
         val apiToken = sessionManager.apiToken ?: return Result.failure()
+        // ✅ Crear api AQUÍ, dentro de doWork
+        val api = RetrofitClient.getApiService(apiToken)
+
 
         val pendientes = syncQueueDao.getPendientes()
         if (pendientes.isEmpty()) return Result.success()
@@ -52,8 +60,8 @@ class SyncWorker(
             syncQueueDao.actualizarEstado(item.id, EstadoSync.ENVIANDO, ahora)
 
             val exito = when (item.tipo) {
-                TipoSync.LECTURA -> enviarLectura(apiToken, item.registroId)
-                TipoSync.REVISION -> enviarRevision(apiToken, item.registroId)
+                TipoSync.LECTURA -> enviarLectura(api,  item.registroId)
+                TipoSync.REVISION -> enviarRevision(api,  item.registroId)
                 else -> false
             }
 
@@ -77,7 +85,7 @@ class SyncWorker(
         return if (todosExitosos) Result.success() else Result.retry()
     }
 
-    private suspend fun enviarLectura(apiToken: String, lecturaId: Int): Boolean {
+    private suspend fun enviarLectura(api: ApiService, lecturaId: Int): Boolean {
         return try {
             val lecturas = lecturaDao.getLecturasPendientes()
             val lectura = lecturas.firstOrNull { it.id == lecturaId } ?: return false
@@ -86,7 +94,7 @@ class SyncWorker(
             val fotoParts = buildFotoParts(lectura.fotosJson)
 
             val response = api.enviarLectura(
-                apiToken = apiToken.toRequestBody(textPlain),
+
                 medidorId = lectura.macroId.toString().toRequestBody(textPlain),
                 valorLectura = lectura.valorLectura.toRequestBody(textPlain),
                 observacion = lectura.observacion?.toRequestBody(textPlain),
@@ -105,7 +113,7 @@ class SyncWorker(
         }
     }
 
-    private suspend fun enviarRevision(apiToken: String, revisionId: Int): Boolean {
+    private suspend fun enviarRevision(api: ApiService,  revisionId: Int): Boolean {
         return try {
             val revisiones = revisionDao.getRevisionesPendientes()
             val revision = revisiones.firstOrNull { it.id == revisionId } ?: return false
@@ -131,7 +139,7 @@ class SyncWorker(
             }
 
             val response = api.enviarRevision(
-                apiToken = apiToken.toRequestBody(textPlain),
+
                 medidorId = revision.medidorId.toString().toRequestBody(textPlain),
                 checklistJson = revision.checklistJson.toRequestBody(textPlain),
                 observacion = revision.observacion?.toRequestBody(textPlain),

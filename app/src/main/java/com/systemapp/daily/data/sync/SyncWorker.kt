@@ -32,19 +32,13 @@ class SyncWorker(
     private val syncQueueDao = db.syncQueueDao()
     private val lecturaDao = db.lecturaDao()
     private val revisionDao = db.revisionDao()
-
-
+    private val macroDao = db.macroDao()
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
     override suspend fun doWork(): Result {
-
-
-
         val sessionManager = SessionManager(applicationContext)
         val apiToken = sessionManager.apiToken ?: return Result.failure()
-        // ✅ Crear api AQUÍ, dentro de doWork
         val api = RetrofitClient.getApiService(apiToken)
-
 
         val pendientes = syncQueueDao.getPendientes()
         if (pendientes.isEmpty()) return Result.success()
@@ -60,8 +54,9 @@ class SyncWorker(
             syncQueueDao.actualizarEstado(item.id, EstadoSync.ENVIANDO, ahora)
 
             val exito = when (item.tipo) {
-                TipoSync.LECTURA -> enviarLectura(api,  item.registroId)
-                TipoSync.REVISION -> enviarRevision(api,  item.registroId)
+                TipoSync.LECTURA -> enviarLectura(api, item.registroId)
+                TipoSync.REVISION -> enviarRevision(api, item.registroId)
+                TipoSync.MACRO -> enviarMacro(api, item.registroId)
                 else -> false
             }
 
@@ -94,7 +89,6 @@ class SyncWorker(
             val fotoParts = buildFotoParts(lectura.fotosJson)
 
             val response = api.enviarLectura(
-
                 medidorId = lectura.macroId.toString().toRequestBody(textPlain),
                 valorLectura = lectura.valorLectura.toRequestBody(textPlain),
                 observacion = lectura.observacion?.toRequestBody(textPlain),
@@ -113,7 +107,7 @@ class SyncWorker(
         }
     }
 
-    private suspend fun enviarRevision(api: ApiService,  revisionId: Int): Boolean {
+    private suspend fun enviarRevision(api: ApiService, revisionId: Int): Boolean {
         return try {
             val revisiones = revisionDao.getRevisionesPendientes()
             val revision = revisiones.firstOrNull { it.id == revisionId } ?: return false
@@ -139,7 +133,6 @@ class SyncWorker(
             }
 
             val response = api.enviarRevision(
-
                 medidorId = revision.medidorId.toString().toRequestBody(textPlain),
                 checklistJson = revision.checklistJson.toRequestBody(textPlain),
                 observacion = revision.observacion?.toRequestBody(textPlain),
@@ -157,6 +150,34 @@ class SyncWorker(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error enviando revisión $revisionId: ${e.message}")
+            false
+        }
+    }
+
+    private suspend fun enviarMacro(api: ApiService, macroId: Int): Boolean {
+        return try {
+            val macro = macroDao.getById(macroId) ?: return false
+
+            val textPlain = "text/plain".toMediaTypeOrNull()
+            val fotoParts = buildFotoParts(macro.rutaFotos)
+
+            val response = api.enviarMacro(
+                idOrden = macroId.toString().toRequestBody(textPlain),
+                lecturaActual = (macro.lecturaActual ?: "").toRequestBody(textPlain),
+                observacion = macro.observacion?.toRequestBody(textPlain),
+                gpsLatitud = macro.gpsLatitudLectura?.toString()?.toRequestBody(textPlain),
+                gpsLongitud = macro.gpsLongitudLectura?.toString()?.toRequestBody(textPlain),
+                fotos = fotoParts
+            )
+
+            if (response.isSuccessful && response.body()?.success == true) {
+                macroDao.marcarSincronizado(macroId)
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error enviando macro $macroId: ${e.message}")
             false
         }
     }

@@ -13,7 +13,7 @@ data class SyncQueueEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
-    /** Tipo: "LECTURA" o "REVISION" */
+    /** Tipo: "LECTURA", "REVISION" o "MACRO" */
     @ColumnInfo(name = "tipo")
     val tipo: String,
 
@@ -52,4 +52,5 @@ object EstadoSync {
 object TipoSync {
     const val LECTURA = "LECTURA"
     const val REVISION = "REVISION"
+    const val MACRO = "MACRO"
 }

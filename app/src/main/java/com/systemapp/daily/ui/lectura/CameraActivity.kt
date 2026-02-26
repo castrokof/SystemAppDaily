@@ -65,9 +65,16 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun takePhoto() {
-        val imageCapture = imageCapture ?: return
+        val imageCapture = imageCapture ?: run {
+            Toast.makeText(this, "Cámara no disponible", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val photoFile = createPhotoFile()
+        if (photoFile == null) {
+            Toast.makeText(this, "Error al crear archivo de foto", Toast.LENGTH_SHORT).show()
+            return
+        }
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
         binding.btnCapture.isEnabled = false
@@ -96,9 +103,17 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
-    private fun createPhotoFile(): File {
+    private fun createPhotoFile(): File? {
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val storageDir = getExternalFilesDir("Pictures")
-        return File.createTempFile("LECTURA_${timeStamp}_", ".jpg", storageDir)
+            ?: filesDir // Fallback a almacenamiento interno si externo no disponible
+        if (!storageDir.exists()) {
+            storageDir.mkdirs()
+        }
+        return try {
+            File.createTempFile("LECTURA_${timeStamp}_", ".jpg", storageDir)
+        } catch (e: Exception) {
+            null
+        }
     }
 }

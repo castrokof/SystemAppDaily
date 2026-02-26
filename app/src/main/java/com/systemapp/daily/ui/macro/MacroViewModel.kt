@@ -120,10 +120,10 @@ class MacroViewModel(application: Application) : AndroidViewModel(application) {
 
             // 3. If send failed or no internet, queue for sync
             val ahora = dateTimeFormat.format(Date())
-            val existente = syncQueueDao.buscarPorRegistro(TipoSync.LECTURA, idOrden)
+            val existente = syncQueueDao.buscarPorRegistro(TipoSync.MACRO, idOrden)
             if (existente == null) {
                 syncQueueDao.insert(SyncQueueEntity(
-                    tipo = TipoSync.LECTURA,
+                    tipo = TipoSync.MACRO,
                     registroId = idOrden,
                     estado = EstadoSync.PENDIENTE,
                     fechaCreacion = ahora
@@ -136,6 +136,6 @@ class MacroViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     suspend fun getSyncStatus(idOrden: Int): String? {
-        return syncQueueDao.getEstadoSync(TipoSync.LECTURA, idOrden)
+        return syncQueueDao.getEstadoSync(TipoSync.MACRO, idOrden)
     }
 }

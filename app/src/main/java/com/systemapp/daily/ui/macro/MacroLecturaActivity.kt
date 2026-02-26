@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,6 +57,10 @@ class MacroLecturaActivity : AppCompatActivity() {
         else Toast.makeText(this, "Se requiere permiso de cámara", Toast.LENGTH_LONG).show()
     }
 
+    companion object {
+        private const val STATE_FOTO_PATHS = "state_foto_paths"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMacroLecturaBinding.inflate(layoutInflater)
@@ -69,11 +75,22 @@ class MacroLecturaActivity : AppCompatActivity() {
             return
         }
 
+        // Restaurar fotos si la actividad fue recreada (ej. al volver de cámara en dispositivos con poca RAM)
+        savedInstanceState?.getStringArrayList(STATE_FOTO_PATHS)?.let { saved ->
+            fotoPaths.clear()
+            fotoPaths.addAll(saved)
+        }
+
         setupUI()
         setupFotos()
         observeViewModel()
         viewModel.cargarOrden(idOrden)
         obtenerGps()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putStringArrayList(STATE_FOTO_PATHS, ArrayList(fotoPaths))
     }
 
     private fun setupUI() {
@@ -96,6 +113,15 @@ class MacroLecturaActivity : AppCompatActivity() {
         binding.btnValidar.setOnClickListener {
             validarYGuardar()
         }
+
+        // TextWatcher para habilitar el botón Validar cuando se escribe la lectura
+        binding.etLectura.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateValidarButton()
+            }
+        })
 
         updateFotoCount()
     }

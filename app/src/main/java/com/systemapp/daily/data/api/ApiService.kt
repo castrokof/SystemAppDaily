@@ -29,13 +29,13 @@ interface ApiService {
     // SINCRONIZACIÓN - Descarga
     // =============================================
     @GET("ordenesMacro")
-    suspend fun getOrdenesMacro(apiToken: String): Response<List<MacroEntity>>
+    suspend fun getOrdenesMacro(@Header("Authorization") apiToken: String): Response<List<MacroEntity>>
 
     @GET("ordenesRevision")
-    suspend fun getOrdenesRevision(apiToken: String): Response<List<RevisionEntity>>
+    suspend fun getOrdenesRevision(@Header("Authorization") apiToken: String): Response<List<RevisionEntity>>
 
     @GET("listasParametros")
-    suspend fun getListasParametros(apiToken: String): Response<List<ListaEntity>>
+    suspend fun getListasParametros(@Header("Authorization") apiToken: String): Response<List<ListaEntity>>
 
     // =============================================
     // LECTURAS - Legacy

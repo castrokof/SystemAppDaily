@@ -7,18 +7,17 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
-
     // =============================================
-    // LOGIN
+    // LOGIN (PÚBLICO - SIN TOKEN)
     // =============================================
-    @GET("loginMovil1")
+    @POST("loginMovil1")
     suspend fun login(
         @Query("usuario") usuario: String,
         @Query("password") password: String
     ): Response<List<UserLogin>>
 
     // =============================================
-    // MEDIDORES
+    // MEDIDORES (CON TOKEN - HEADER)
     // =============================================
     @GET("medidoresout")
     suspend fun getMedidores(
@@ -26,64 +25,56 @@ interface ApiService {
     ): Response<List<Medidor>>
 
     // =============================================
-    // SINCRONIZACIÓN - Descarga
+    // SINCRONIZACIÓN - Descarga (CON TOKEN - HEADER)
     // =============================================
     @GET("ordenesMacro")
-    suspend fun getOrdenesMacro(
-        @Query("api_token") apiToken: String
-    ): Response<List<MacroEntity>>
+    suspend fun getOrdenesMacro(): Response<List<MacroEntity>>
 
     @GET("ordenesRevision")
-    suspend fun getOrdenesRevision(
-        @Query("api_token") apiToken: String
-    ): Response<List<RevisionEntity>>
+    suspend fun getOrdenesRevision(): Response<List<RevisionEntity>>
 
     @GET("listasParametros")
-    suspend fun getListasParametros(
-        @Query("api_token") apiToken: String
-    ): Response<List<ListaEntity>>
+    suspend fun getListasParametros(): Response<List<ListaEntity>>
 
     // =============================================
-    // LECTURAS - Legacy
+    // LECTURAS - Legacy (CON TOKEN - HEADER)
     // =============================================
     @GET("lecturasMovil/check")
     suspend fun checkLectura(
-        @Query("api_token") apiToken: String,
         @Query("medidor_id") medidorId: Int
     ): Response<CheckLecturaResponse>
 
     @Multipart
     @POST("lecturasMovil")
     suspend fun enviarLectura(
-        @Part("api_token") apiToken: RequestBody,
         @Part("medidor_id") medidorId: RequestBody,
         @Part("valor_lectura") valorLectura: RequestBody,
         @Part("observacion") observacion: RequestBody?,
         @Part fotos: List<MultipartBody.Part>
+        // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<LecturaResponse>
 
     // =============================================
-    // MACROS - Subida
+    // MACROS - Subida (CON TOKEN - HEADER)
     // =============================================
     @Multipart
     @POST("macromedidoresMovil")
     suspend fun enviarMacro(
-        @Part("api_token") apiToken: RequestBody,
         @Part("id_orden") idOrden: RequestBody,
         @Part("lectura_actual") lecturaActual: RequestBody,
         @Part("observacion") observacion: RequestBody?,
         @Part("gps_latitud") gpsLatitud: RequestBody?,
         @Part("gps_longitud") gpsLongitud: RequestBody?,
         @Part fotos: List<MultipartBody.Part>
+        // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<SyncResponse>
 
     // =============================================
-    // REVISIONES - Subida v2
+    // REVISIONES - Subida v2 (CON TOKEN - HEADER)
     // =============================================
     @Multipart
     @POST("revisionesMovil")
     suspend fun enviarRevision(
-        @Part("api_token") apiToken: RequestBody,
         @Part("medidor_id") medidorId: RequestBody,
         @Part("checklist_json") checklistJson: RequestBody,
         @Part("observacion") observacion: RequestBody?,
@@ -91,12 +82,12 @@ interface ApiService {
         @Part("longitud") longitud: RequestBody?,
         @Part fotos: List<MultipartBody.Part>,
         @Part actaPdf: MultipartBody.Part?
+        // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<RevisionResponse>
 
     @Multipart
     @POST("revisionesMovilV2")
     suspend fun enviarRevisionV2(
-        @Part("api_token") apiToken: RequestBody,
         @Part("id_orden") idOrden: RequestBody,
         @Part("codigo_predio") codigoPredio: RequestBody,
         @Part("estado_acometida") estadoAcometida: RequestBody?,
@@ -115,5 +106,6 @@ interface ApiService {
         @Part fotos: List<MultipartBody.Part>,
         @Part firmaCliente: MultipartBody.Part?,
         @Part actaPdf: MultipartBody.Part?
+        // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<SyncResponse>
 }

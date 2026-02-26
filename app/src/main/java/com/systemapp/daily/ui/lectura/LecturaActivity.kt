@@ -175,8 +175,8 @@ class LecturaActivity : AppCompatActivity() {
     }
 
     private fun verificarPermisoLectura() {
-        val apiToken = sessionManager.apiToken ?: return
-        viewModel.checkPuedeLeer(apiToken, macroId)
+
+        viewModel.checkPuedeLeer( macroId)
     }
 
     private fun verificarPermisoYCapturar() {

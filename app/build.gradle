@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId "com.systemapp.daily"
-        minSdk 24
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
@@ -18,7 +18,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         // URL base de la API - Cambiar según ambiente
-        buildConfigField "String", "API_BASE_URL", "\"https://manteliviano.com/AquaProgrammerData/api/\""
+        buildConfigField "String", "API_BASE_URL", '"https://manteliviano.com/AquaProgrammerData/api/"'
     }
 
     buildTypes {

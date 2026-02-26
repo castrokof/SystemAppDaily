@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         sessionManager = SessionManager(this)
-        syncRepository = SyncRepository(this)
+        syncRepository = SyncRepository(this, sessionManager.apiToken ?: "")
         gpsManager = GpsLocationManager.getInstance(this)
 
         setupToolbar()
@@ -117,9 +117,26 @@ class MainActivity : AppCompatActivity() {
                     confirmarBorrarDatos()
                     true
                 }
+                R.id.nav_cerrar_sesion -> {
+                    confirmarCerrarSesion()
+                    true
+                }
                 else -> false
             }
         }
+    }
+
+    private fun confirmarCerrarSesion() {
+        AlertDialog.Builder(this)
+            .setTitle("Cerrar Sesión")
+            .setMessage("¿Está seguro que desea cerrar sesión? Esto también borrará su token de autenticación.")
+            .setPositiveButton("Sí") { _, _ ->
+                sessionManager.logout()
+                startActivity(Intent(this, LoginActivity::class.java))
+                finish()
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 
     private fun setupDashboardCards() {
@@ -177,12 +194,14 @@ class MainActivity : AppCompatActivity() {
             navigateToLogin()
             return
         }
+        // ✅ Pasar token al crear el repository
+        val syncRepository = SyncRepository(this, apiToken)
 
         binding.progressSync.visibility = View.VISIBLE
         binding.cardSync.isEnabled = false
 
         lifecycleScope.launch {
-            val result = syncRepository.sincronizar(apiToken)
+            val result = syncRepository.sincronizar()
             binding.progressSync.visibility = View.GONE
             binding.cardSync.isEnabled = true
 

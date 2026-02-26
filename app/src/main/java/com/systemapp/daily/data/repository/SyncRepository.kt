@@ -11,21 +11,23 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
-class SyncRepository(context: Context) {
-
-    private val api = RetrofitClient.apiService
+class SyncRepository(private val context: Context, private val apiToken: String) {
+    // ✅ Crear ApiService con token una sola vez
+    private val api = RetrofitClient.getApiService(apiToken)
     private val db = AppDatabase.getDatabase(context)
     private val macroDao = db.macroDao()
     private val ordenRevisionDao = db.ordenRevisionDao()
     private val listaDao = db.listaDao()
 
-    suspend fun sincronizar(apiToken: String): NetworkResult<SyncResult> {
+    suspend fun sincronizar(): NetworkResult<SyncResult> {
+
         val errores = mutableListOf<String>()
         var macrosSubidos = 0
         var revisionesSubidas = 0
         var macrosDescargados = 0
         var revisionesDescargadas = 0
         var listasDescargadas = 0
+
 
         // 1. Subir macros pendientes
         try {
@@ -36,7 +38,7 @@ class SyncRepository(context: Context) {
                     val fotoParts = buildFotoParts(macro.rutaFotos)
 
                     val response = api.enviarMacro(
-                        apiToken = apiToken.toRequestBody(textPlain),
+
                         idOrden = macro.idOrden.toString().toRequestBody(textPlain),
                         lecturaActual = (macro.lecturaActual ?: "").toRequestBody(textPlain),
                         observacion = macro.observacion?.toRequestBody(textPlain),
@@ -68,7 +70,7 @@ class SyncRepository(context: Context) {
                     val firmaPart = buildFilePart("firma_cliente", revision.firmaCliente)
 
                     val response = api.enviarRevisionV2(
-                        apiToken = apiToken.toRequestBody(textPlain),
+
                         idOrden = revision.idOrden.toString().toRequestBody(textPlain),
                         codigoPredio = revision.codigoPredio.toRequestBody(textPlain),
                         estadoAcometida = revision.estadoAcometida?.toRequestBody(textPlain),
@@ -104,7 +106,7 @@ class SyncRepository(context: Context) {
 
         // 3. Descargar órdenes de macros
         try {
-            val response = api.getOrdenesMacro(apiToken)
+            val response = api.getOrdenesMacro()
             if (response.isSuccessful) {
                 val macros = response.body() ?: emptyList()
                 if (macros.isNotEmpty()) {
@@ -120,7 +122,7 @@ class SyncRepository(context: Context) {
 
         // 4. Descargar órdenes de revisión
         try {
-            val response = api.getOrdenesRevision(apiToken)
+            val response = api.getOrdenesRevision()
             if (response.isSuccessful) {
                 val revisiones = response.body() ?: emptyList()
                 if (revisiones.isNotEmpty()) {
@@ -136,7 +138,7 @@ class SyncRepository(context: Context) {
 
         // 5. Descargar listas/catálogos
         try {
-            val response = api.getListasParametros(apiToken)
+            val response = api.getListasParametros()
             if (response.isSuccessful) {
                 val listas = response.body() ?: emptyList()
                 if (listas.isNotEmpty()) {
@@ -167,14 +169,14 @@ class SyncRepository(context: Context) {
         }
     }
 
-    suspend fun descargarDatos(apiToken: String): NetworkResult<SyncResult> {
+    suspend fun descargarDatos(): NetworkResult<SyncResult> {
         val errores = mutableListOf<String>()
         var macrosDescargados = 0
         var revisionesDescargadas = 0
         var listasDescargadas = 0
 
         try {
-            val macroResponse = api.getOrdenesMacro(apiToken)
+            val macroResponse = api.getOrdenesMacro()
             if (macroResponse.isSuccessful) {
                 val macros = macroResponse.body() ?: emptyList()
                 macroDao.insertAll(macros)
@@ -185,7 +187,7 @@ class SyncRepository(context: Context) {
         }
 
         try {
-            val revResponse = api.getOrdenesRevision(apiToken)
+            val revResponse = api.getOrdenesRevision()
             if (revResponse.isSuccessful) {
                 val revisiones = revResponse.body() ?: emptyList()
                 ordenRevisionDao.insertAll(revisiones)
@@ -196,7 +198,7 @@ class SyncRepository(context: Context) {
         }
 
         try {
-            val listasResponse = api.getListasParametros(apiToken)
+            val listasResponse = api.getListasParametros()
             if (listasResponse.isSuccessful) {
                 val listas = listasResponse.body() ?: emptyList()
                 listaDao.deleteAll()

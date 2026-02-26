@@ -41,4 +41,13 @@
         </menu>
     </item>
 
+    <item android:title="@string/nav_salir">
+        <menu>
+            <item
+                android:id="@+id/nav_cerrar_sesion"
+                android:icon="@drawable/ic_logout"
+                android:title="@string/nav_cerrar_sesion" />
+        </menu>
+    </item>
+
 </menu>

@@ -25,7 +25,7 @@ class MacroViewModel(application: Application) : AndroidViewModel(application) {
     private val macroDao = db.macroDao()
     private val syncQueueDao = db.syncQueueDao()
     private val networkMonitor = NetworkMonitor.getInstance(application)
-    private val api = RetrofitClient.apiService
+
 
     val pendientes: LiveData<List<MacroEntity>> = macroDao.getPendientes().flowOn(Dispatchers.IO).asLiveData()
     val ejecutados: LiveData<List<MacroEntity>> = macroDao.getEjecutados().flowOn(Dispatchers.IO).asLiveData()
@@ -86,8 +86,10 @@ class MacroViewModel(application: Application) : AndroidViewModel(application) {
             // 2. Try immediate send
             val sessionManager = SessionManager(getApplication())
             val apiToken = sessionManager.apiToken
+
             if (apiToken != null && networkMonitor.isConnected()) {
                 try {
+                    val api = RetrofitClient.getApiService(apiToken)
                     val textPlain = "text/plain".toMediaTypeOrNull()
                     val fotoParts = fotoPaths.mapIndexedNotNull { index, path ->
                         val file = File(path)
@@ -98,13 +100,13 @@ class MacroViewModel(application: Application) : AndroidViewModel(application) {
                     }
 
                     val response = api.enviarMacro(
-                        apiToken = apiToken.toRequestBody(textPlain),
+
                         idOrden = idOrden.toString().toRequestBody(textPlain),
                         lecturaActual = lecturaActual.toRequestBody(textPlain),
                         observacion = observacion?.toRequestBody(textPlain),
                         gpsLatitud = latitud?.toString()?.toRequestBody(textPlain),
                         gpsLongitud = longitud?.toString()?.toRequestBody(textPlain),
-                        fotos = fotoParts
+                            fotos = fotoParts
                     )
 
                     if (response.isSuccessful && response.body()?.success == true) {

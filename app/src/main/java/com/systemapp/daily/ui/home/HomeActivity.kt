@@ -69,9 +69,12 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun cargarMedidores() {
+
         val usuario = sessionManager.userUsuario
-        if (usuario != null) {
-            viewModel.cargarMedidores(usuario)
+        val apiToken = sessionManager.apiToken
+
+        if (usuario != null  && apiToken != null) {
+            viewModel.cargarMedidores(usuario, apiToken)
         } else {
             navigateToLogin()
         }

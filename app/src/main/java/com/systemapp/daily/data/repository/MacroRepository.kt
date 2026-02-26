@@ -9,13 +9,16 @@ import com.systemapp.daily.utils.NetworkResult
  */
 class MacroRepository {
 
-    private val api = RetrofitClient.apiService
 
     /**
      * Obtiene los medidores del usuario usando el endpoint existente /medidoresout.
      * Se pasa el nombre de usuario (no el api_token).
      */
-    suspend fun getMedidores(usuario: String): NetworkResult<List<Medidor>> {
+    suspend fun getMedidores(apiToken: String, usuario: String): NetworkResult<List<Medidor>> {
+
+        // ✅ Crear instancia con token para esta llamada
+        val api = RetrofitClient.getApiService(apiToken)
+
         return try {
             val response = api.getMedidores(usuario)
             if (response.isSuccessful) {

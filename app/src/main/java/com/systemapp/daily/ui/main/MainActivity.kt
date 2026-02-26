@@ -117,9 +117,26 @@ class MainActivity : AppCompatActivity() {
                     confirmarBorrarDatos()
                     true
                 }
+                R.id.nav_cerrar_sesion -> {
+                    confirmarCerrarSesion()
+                    true
+                }
                 else -> false
             }
         }
+    }
+
+    private fun confirmarCerrarSesion() {
+        AlertDialog.Builder(this)
+            .setTitle("Cerrar Sesión")
+            .setMessage("¿Está seguro que desea cerrar sesión? Esto también borrará su token de autenticación.")
+            .setPositiveButton("Sí") { _, _ ->
+                sessionManager.logout()
+                startActivity(Intent(this, LoginActivity::class.java))
+                finish()
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 
     private fun setupDashboardCards() {

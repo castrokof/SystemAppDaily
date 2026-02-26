@@ -29,6 +29,8 @@
     <string name="nav_datos">Datos</string>
     <string name="nav_sincronizar">Sincronizar</string>
     <string name="nav_borrar_datos">Borrar Datos</string>
+    <string name="nav_salir">Salir</string>
+    <string name="nav_cerrar_sesion">Cerrar Sesión</string>
     <string name="nav_abrir">Abrir menú</string>
     <string name="nav_cerrar">Cerrar menú</string>
     <string name="bienvenido_formato">Bienvenido, %1$s</string>

@@ -89,7 +89,7 @@ class RevisionRepository(private val context: Context) {
                 }
 
                 val response = api.enviarRevision(
-                    apiToken = tokenBody,
+                    apiToken = "Bearer $apiToken",
                     medidorId = medidorIdBody,
                     checklistJson = checklistBody,
                     observacion = obsBody,

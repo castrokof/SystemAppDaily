@@ -180,7 +180,7 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
                     })
 
                     val response = api.enviarRevisionV2(
-
+                        apiToken = "Bearer $apiToken",
                         idOrden = currentOrden.idOrden.toString().toRequestBody(textPlain),
                         codigoPredio = currentOrden.codigoPredio.toRequestBody(textPlain),
                         estadoAcometida = estadoAcometida.ifBlank { null }?.toRequestBody(textPlain),
@@ -199,7 +199,6 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
                         fotos = fotoParts,
                         firmaCliente = firmaPart,
                         actaPdf = null,
-                        apiToken = apiToken.toRequestBody("text/plain".toMediaTypeOrNull()),
                     )
                     if (response.isSuccessful && response.body()?.success == true) {
                         ordenRevisionDao.marcarSincronizado(currentOrden.idOrden)

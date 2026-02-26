@@ -3,14 +3,12 @@
 *.class
 *.o
 *.obj
+*.out
+*.dll
 *.so
 *.a
-*.dll
-*.exe
-*.out
 
 # Dependencies
-.gradle/
 node_modules/
 venv/
 .venv/
@@ -18,27 +16,26 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 target/
+.gradle/
 
-# Build directories
-build/
-dist/
-
-# IDE files
-.vscode/
-.idea/
+# Logs and temp files
+*.log
+*.tmp
 *.swp
 *.swo
-*.tmp
 
-# System files
-.DS_Store
-Thumbs.db
+# Environment
 .env
 .env.local
 *.env.*
 
-# Logs
-*.log
+# Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
 
 # Coverage
 coverage/
@@ -64,4 +61,8 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```

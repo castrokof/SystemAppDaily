@@ -7,15 +7,17 @@ use App\ListaParametro;
 use App\User;
 use App\Models\Admin\Ordenesmtl;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Controller WEB - Revisiones.
  *
- * Flujo:
- * 1. /revisiones/criticas           -> Supervisor ve lecturas con critica
- * 2. POST /revisiones/generar       -> Supervisor selecciona y genera ordenes
- * 3. /revisiones                    -> Listado de ordenes generadas
- * 4. /revisiones/{id}               -> Detalle con resultado del wizard
+ * Flujo real:
+ * 1. /revisiones/criticas                 -> Supervisor ve lecturas con Estado=4 (criticas)
+ * 2. AJAX adicionarcritica/eliminarcritica -> Marca/desmarca con Coordenada='generar'
+ * 3. POST /revisiones/generar             -> Genera ordenes desde las marcadas (Coordenada='generar')
+ * 4. /revisiones                          -> Listado de ordenes generadas
+ * 5. /revisiones/{id}                     -> Detalle con resultado del wizard
  */
 class RevisionController extends Controller
 {
@@ -59,20 +61,12 @@ class RevisionController extends Controller
 
     /**
      * GET /revisiones/criticas
-     * Muestra las lecturas de ordenescu que tienen Critica != consumo normal
-     * y que aun no tienen orden de revision generada.
+     * Muestra las lecturas de ordenescu con Estado=4 (criticas).
+     * Las que tienen Coordenada='generar' estan marcadas para revision.
      */
     public function criticas(Request $request)
     {
-        $query = Ordenesmtl::where('Critica', '!=', 'CONSUMO NORMAL')
-            ->where('Critica', '!=', '')
-            ->whereNotNull('Critica');
-
-        // Excluir las que ya tienen orden de revision
-        $lecturasConRevision = OrdenRevision::pluck('lectura_id')->toArray();
-        if (!empty($lecturasConRevision)) {
-            $query->whereNotIn('id', $lecturasConRevision);
-        }
+        $query = Ordenesmtl::where('Estado', 4);
 
         // Filtros
         if ($request->filled('critica')) {
@@ -84,6 +78,15 @@ class RevisionController extends Controller
         if ($request->filled('ruta')) {
             $query->where('Ruta', $request->ruta);
         }
+        if ($request->filled('marcadas')) {
+            if ($request->marcadas == 'si') {
+                $query->where('Coordenada', 'generar');
+            } elseif ($request->marcadas == 'no') {
+                $query->where(function ($q) {
+                    $q->whereNull('Coordenada')->orWhere('Coordenada', '!=', 'generar');
+                });
+            }
+        }
         if ($request->filled('buscar')) {
             $query->where(function ($q) use ($request) {
                 $q->where('Suscriptor', 'LIKE', '%' . $request->buscar . '%')
@@ -94,17 +97,72 @@ class RevisionController extends Controller
 
         $criticas = $query->orderBy('id', 'desc')->paginate(30);
 
-        // Obtener valores unicos para filtros
-        $tiposCritica = Ordenesmtl::where('Critica', '!=', 'CONSUMO NORMAL')
-            ->where('Critica', '!=', '')
+        // Valores unicos para filtro de critica
+        $tiposCritica = Ordenesmtl::where('Estado', 4)
             ->whereNotNull('Critica')
+            ->where('Critica', '!=', '')
             ->distinct()
             ->pluck('Critica');
+
+        // Contadores
+        $totalCriticas = Ordenesmtl::where('Estado', 4)->count();
+        $totalMarcadas = Ordenesmtl::where('Estado', 4)->where('Coordenada', 'generar')->count();
 
         // Usuarios revisores para asignar
         $revisores = User::orderBy('nombre')->pluck('nombre', 'id');
 
-        return view('revisiones.criticas', compact('criticas', 'tiposCritica', 'revisores'));
+        return view('revisiones.criticas', compact(
+            'criticas', 'tiposCritica', 'revisores', 'totalCriticas', 'totalMarcadas'
+        ));
+    }
+
+    // ========================================
+    // MARCAR / DESMARCAR CRITICAS (AJAX)
+    // Usa tu logica existente: Coordenada = 'generar'
+    // ========================================
+
+    /**
+     * POST /revisiones/adicionar-critica (AJAX)
+     * Marca lecturas seleccionadas con Coordenada='generar'
+     */
+    public function adicionarcritica(Request $request)
+    {
+        if ($request->ajax()) {
+            $id = $request->input('id');
+
+            foreach ($id as $fila) {
+                DB::table('ordenescu')
+                    ->where([
+                        ['id', '=', $fila],
+                        ['Estado', '=', 4],
+                    ])
+                    ->update(['Coordenada' => 'generar']);
+            }
+
+            return response()->json(['mensaje' => 'ok']);
+        }
+    }
+
+    /**
+     * POST /revisiones/eliminar-critica (AJAX)
+     * Desmarca lecturas seleccionadas (Coordenada = NULL)
+     */
+    public function eliminarcritica(Request $request)
+    {
+        if ($request->ajax()) {
+            $id = $request->input('id');
+
+            foreach ($id as $fila) {
+                DB::table('ordenescu')
+                    ->where([
+                        ['id', '=', $fila],
+                        ['Estado', '=', 4],
+                    ])
+                    ->update(['Coordenada' => null]);
+            }
+
+            return response()->json(['mensaje' => 'ok']);
+        }
     }
 
     // ========================================
@@ -113,43 +171,40 @@ class RevisionController extends Controller
 
     /**
      * POST /revisiones/generar
-     * El supervisor selecciona lecturas criticas y genera ordenes de revision.
+     * Genera ordenes de revision a partir de las lecturas marcadas
+     * (Estado=4, Coordenada='generar') que aun no tienen orden.
      */
     public function generar(Request $request)
     {
         $this->validate($request, [
-            'lecturas'   => 'required|array|min:1',
-            'lecturas.*' => 'exists:ordenescu,id',
             'usuario_id' => 'required|exists:users,id',
         ]);
 
-        $lecturaIds = $request->input('lecturas');
-        $usuarioId  = $request->input('usuario_id');
-        $creadas    = 0;
-        $duplicadas = 0;
+        $usuarioId = $request->input('usuario_id');
 
-        foreach ($lecturaIds as $lecturaId) {
-            // Verificar que no exista ya una orden para esta lectura
-            $existe = OrdenRevision::where('lectura_id', $lecturaId)->exists();
-            if ($existe) {
-                $duplicadas++;
-                continue;
-            }
+        // Obtener todas las marcadas que NO tienen orden de revision
+        $lecturasConRevision = OrdenRevision::pluck('lectura_id')->toArray();
 
-            $lectura = Ordenesmtl::find($lecturaId);
-            if ($lectura) {
-                OrdenRevision::crearDesdeLecrura($lectura, $usuarioId);
-                $creadas++;
-            }
+        $marcadas = Ordenesmtl::where('Estado', 4)
+            ->where('Coordenada', 'generar')
+            ->when(!empty($lecturasConRevision), function ($q) use ($lecturasConRevision) {
+                $q->whereNotIn('id', $lecturasConRevision);
+            })
+            ->get();
+
+        if ($marcadas->isEmpty()) {
+            return redirect()->route('revisiones.criticas')
+                ->with('error', 'No hay lecturas marcadas para generar ordenes de revision.');
         }
 
-        $msg = "$creadas ordenes de revision creadas.";
-        if ($duplicadas > 0) {
-            $msg .= " ($duplicadas ya tenian orden asignada)";
+        $creadas = 0;
+        foreach ($marcadas as $lectura) {
+            OrdenRevision::crearDesdeLectura($lectura, $usuarioId);
+            $creadas++;
         }
 
         return redirect()->route('revisiones.index')
-            ->with('success', $msg);
+            ->with('success', "$creadas ordenes de revision creadas y asignadas.");
     }
 
     // ========================================
@@ -181,6 +236,13 @@ class RevisionController extends Controller
         if ($revision->estado_orden === 'EJECUTADO') {
             return redirect()->back()
                 ->with('error', 'No se puede eliminar una revision ya ejecutada.');
+        }
+
+        // Devolver la lectura a sin marcar
+        if ($revision->lectura_id) {
+            DB::table('ordenescu')
+                ->where('id', $revision->lectura_id)
+                ->update(['Coordenada' => null]);
         }
 
         $revision->delete();

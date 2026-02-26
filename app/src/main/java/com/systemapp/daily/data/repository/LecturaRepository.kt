@@ -50,7 +50,7 @@ class LecturaRepository(private val context: Context) {
      */
     suspend fun checkPuedeLeer(apiToken: String, macroId: Int): NetworkResult<CheckLecturaResponse> {
         return try {
-            val response = api.checkLectura(apiToken, macroId)
+            val response = api.checkLectura("Bearer $apiToken", macroId)
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null) {
@@ -106,7 +106,7 @@ class LecturaRepository(private val context: Context) {
                 }
 
                 val response = api.enviarLectura(
-                    apiToken = tokenBody,
+                    apiToken = "Bearer $apiToken",
                     medidorId = macroIdBody,
                     valorLectura = valorBody,
                     observacion = obsBody,

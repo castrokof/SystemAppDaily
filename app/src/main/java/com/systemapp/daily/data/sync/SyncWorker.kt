@@ -86,7 +86,7 @@ class SyncWorker(
             val fotoParts = buildFotoParts(lectura.fotosJson)
 
             val response = api.enviarLectura(
-                apiToken = apiToken.toRequestBody(textPlain),
+                apiToken = "Bearer $apiToken",
                 medidorId = lectura.macroId.toString().toRequestBody(textPlain),
                 valorLectura = lectura.valorLectura.toRequestBody(textPlain),
                 observacion = lectura.observacion?.toRequestBody(textPlain),
@@ -131,7 +131,7 @@ class SyncWorker(
             }
 
             val response = api.enviarRevision(
-                apiToken = apiToken.toRequestBody(textPlain),
+                apiToken = "Bearer $apiToken",
                 medidorId = revision.medidorId.toString().toRequestBody(textPlain),
                 checklistJson = revision.checklistJson.toRequestBody(textPlain),
                 observacion = revision.observacion?.toRequestBody(textPlain),

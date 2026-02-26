@@ -29,33 +29,25 @@ interface ApiService {
     // SINCRONIZACIÓN - Descarga
     // =============================================
     @GET("ordenesMacro")
-    suspend fun getOrdenesMacro(
-        @Query("api_token") apiToken: String
-    ): Response<List<MacroEntity>>
+    suspend fun getOrdenesMacro(): Response<List<MacroEntity>>
 
     @GET("ordenesRevision")
-    suspend fun getOrdenesRevision(
-        @Query("api_token") apiToken: String
-    ): Response<List<RevisionEntity>>
+    suspend fun getOrdenesRevision(): Response<List<RevisionEntity>>
 
     @GET("listasParametros")
-    suspend fun getListasParametros(
-        @Query("api_token") apiToken: String
-    ): Response<List<ListaEntity>>
+    suspend fun getListasParametros(): Response<List<ListaEntity>>
 
     // =============================================
     // LECTURAS - Legacy
     // =============================================
     @GET("lecturasMovil/check")
     suspend fun checkLectura(
-        @Query("api_token") apiToken: String,
         @Query("medidor_id") medidorId: Int
     ): Response<CheckLecturaResponse>
 
     @Multipart
     @POST("lecturasMovil")
     suspend fun enviarLectura(
-        @Part("api_token") apiToken: RequestBody,
         @Part("medidor_id") medidorId: RequestBody,
         @Part("valor_lectura") valorLectura: RequestBody,
         @Part("observacion") observacion: RequestBody?,
@@ -68,7 +60,6 @@ interface ApiService {
     @Multipart
     @POST("macromedidoresMovil")
     suspend fun enviarMacro(
-        @Part("api_token") apiToken: RequestBody,
         @Part("id_orden") idOrden: RequestBody,
         @Part("lectura_actual") lecturaActual: RequestBody,
         @Part("observacion") observacion: RequestBody?,
@@ -83,7 +74,6 @@ interface ApiService {
     @Multipart
     @POST("revisionesMovil")
     suspend fun enviarRevision(
-        @Part("api_token") apiToken: RequestBody,
         @Part("medidor_id") medidorId: RequestBody,
         @Part("checklist_json") checklistJson: RequestBody,
         @Part("observacion") observacion: RequestBody?,
@@ -96,7 +86,6 @@ interface ApiService {
     @Multipart
     @POST("revisionesMovilV2")
     suspend fun enviarRevisionV2(
-        @Part("api_token") apiToken: RequestBody,
         @Part("id_orden") idOrden: RequestBody,
         @Part("codigo_predio") codigoPredio: RequestBody,
         @Part("estado_acometida") estadoAcometida: RequestBody?,

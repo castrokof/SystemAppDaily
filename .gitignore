@@ -1,17 +1,53 @@
 ```
 # Compiled and build artifacts
 *.class
-*.dex
-*.so
-*.aar
-*.apk
-*.jar
-*.war
+*.o
+*.obj
+*.out
+build/
+target/
+
+# Dependencies
+.gradle/
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
 *.zip
-*.tar
 *.gz
+*.tar
+*.tgz
 *.bz2
 *.xz
+*.7z
+*.rar
 *.zst
 *.lz4
 *.lzh
@@ -26,111 +62,4 @@
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-
-# Dependencies
-node_modules/
-venv/
-.venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-target/
-.gradle/
-build/
-dist/
-out/
-
-# Android specific
-*.ap_
-*.aab
-*.apks
-*.apc
-*.apex
-*.cap
-*.car
-*.cpk
-*.dlc
-*.dmg
-*.ipa
-*.iso
-*.jar.pack
-*.jmod
-*.mar
-*.msi
-*.nupkg
-*.pkg
-*.rpm
-*.snap
-*.xpi
-gen/
-bin/
-obj/
-.proguard/
-.externalNativeBuild/
-.cxx/
-*.keystore
-*.jks
-*.p12
-*.pfx
-*.pem
-*.crt
-*.cer
-*.der
-*.p7b
-*.p7c
-*.p7r
-*.p7s
-*.spc
-*.sst
-*.stl
-*.srl
-*.srp
-*.sys
-*.vmdk
-*.vhd
-*.vhdx
-*.wim
-*.xen
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-*.swo
-*.bak
-*.backup
-*~
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# System files
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Icon?
-.directory
-.folders
-.lst
-.sln
-.user
-.userosscache
-.suo
-.vs/
 ```

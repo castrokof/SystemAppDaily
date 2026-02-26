@@ -24,6 +24,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
 /**
@@ -197,15 +199,16 @@ class ActaRevisionActivity : AppCompatActivity() {
     }
 
     private fun enviarConActa() {
-        val apiToken = sessionManager.apiToken ?: return
+
         val usuario = sessionManager.userUsuario ?: return
 
         // Agregar el path del PDF a las fotos para enviarlo como archivo adicional
         val allFiles = ArrayList(fotoPaths)
         actaPdfFile?.let { allFiles.add(it.absolutePath) }
 
+        val apiToken = ""
         viewModel.enviarRevision(
-            apiToken = apiToken,
+
             medidorId = medidorId,
             refMedidor = medidorCodigo,
             suscriptor = medidorSuscriptor,
@@ -215,7 +218,8 @@ class ActaRevisionActivity : AppCompatActivity() {
             latitud = latitud,
             longitud = longitud,
             fotoPaths = allFiles,
-            usuario = usuario
+            usuario = usuario,
+            apiToken = apiToken,
         )
     }
 

@@ -48,9 +48,9 @@ class LecturaRepository(private val context: Context) {
     /**
      * Verifica si el usuario puede tomar lectura de un macro hoy.
      */
-    suspend fun checkPuedeLeer(apiToken: String, macroId: Int): NetworkResult<CheckLecturaResponse> {
+    suspend fun checkPuedeLeer( macroId: Int): NetworkResult<CheckLecturaResponse> {
         return try {
-            val response = api.checkLectura("Bearer $apiToken", macroId)
+            val response = api.checkLectura( macroId)
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null) {
@@ -106,11 +106,11 @@ class LecturaRepository(private val context: Context) {
                 }
 
                 val response = api.enviarLectura(
-                    apiToken = "Bearer $apiToken",
+                    apiToken = tokenBody,
                     medidorId = macroIdBody,
                     valorLectura = valorBody,
                     observacion = obsBody,
-                    fotos = fotoParts
+                    fotos = fotoParts,
                 )
 
                 if (response.isSuccessful && response.body()?.success == true) {

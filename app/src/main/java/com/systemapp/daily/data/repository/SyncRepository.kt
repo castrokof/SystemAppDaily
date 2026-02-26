@@ -36,7 +36,7 @@ class SyncRepository(context: Context) {
                     val fotoParts = buildFotoParts(macro.rutaFotos)
 
                     val response = api.enviarMacro(
-                        apiToken = "Bearer $apiToken",
+                        apiToken = apiToken.toRequestBody(textPlain),
                         idOrden = macro.idOrden.toString().toRequestBody(textPlain),
                         lecturaActual = (macro.lecturaActual ?: "").toRequestBody(textPlain),
                         observacion = macro.observacion?.toRequestBody(textPlain),
@@ -68,7 +68,7 @@ class SyncRepository(context: Context) {
                     val firmaPart = buildFilePart("firma_cliente", revision.firmaCliente)
 
                     val response = api.enviarRevisionV2(
-                        apiToken = "Bearer $apiToken",
+                        apiToken = apiToken.toRequestBody(textPlain),
                         idOrden = revision.idOrden.toString().toRequestBody(textPlain),
                         codigoPredio = revision.codigoPredio.toRequestBody(textPlain),
                         estadoAcometida = revision.estadoAcometida?.toRequestBody(textPlain),
@@ -104,7 +104,7 @@ class SyncRepository(context: Context) {
 
         // 3. Descargar órdenes de macros
         try {
-            val response = api.getOrdenesMacro("Bearer $apiToken")
+            val response = api.getOrdenesMacro(apiToken)
             if (response.isSuccessful) {
                 val macros = response.body() ?: emptyList()
                 if (macros.isNotEmpty()) {
@@ -120,7 +120,7 @@ class SyncRepository(context: Context) {
 
         // 4. Descargar órdenes de revisión
         try {
-            val response = api.getOrdenesRevision("Bearer $apiToken")
+            val response = api.getOrdenesRevision(apiToken)
             if (response.isSuccessful) {
                 val revisiones = response.body() ?: emptyList()
                 if (revisiones.isNotEmpty()) {
@@ -136,7 +136,7 @@ class SyncRepository(context: Context) {
 
         // 5. Descargar listas/catálogos
         try {
-            val response = api.getListasParametros("Bearer $apiToken")
+            val response = api.getListasParametros(apiToken)
             if (response.isSuccessful) {
                 val listas = response.body() ?: emptyList()
                 if (listas.isNotEmpty()) {
@@ -174,7 +174,7 @@ class SyncRepository(context: Context) {
         var listasDescargadas = 0
 
         try {
-            val macroResponse = api.getOrdenesMacro("Bearer $apiToken")
+            val macroResponse = api.getOrdenesMacro(apiToken)
             if (macroResponse.isSuccessful) {
                 val macros = macroResponse.body() ?: emptyList()
                 macroDao.insertAll(macros)
@@ -185,7 +185,7 @@ class SyncRepository(context: Context) {
         }
 
         try {
-            val revResponse = api.getOrdenesRevision("Bearer $apiToken")
+            val revResponse = api.getOrdenesRevision(apiToken)
             if (revResponse.isSuccessful) {
                 val revisiones = revResponse.body() ?: emptyList()
                 ordenRevisionDao.insertAll(revisiones)
@@ -196,7 +196,7 @@ class SyncRepository(context: Context) {
         }
 
         try {
-            val listasResponse = api.getListasParametros("Bearer $apiToken")
+            val listasResponse = api.getListasParametros(apiToken)
             if (listasResponse.isSuccessful) {
                 val listas = listasResponse.body() ?: emptyList()
                 listaDao.deleteAll()

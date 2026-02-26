@@ -10,7 +10,6 @@ import com.systemapp.daily.data.model.SyncQueueEntity
 import com.systemapp.daily.data.model.TipoSync
 import com.systemapp.daily.data.network.NetworkMonitor
 import com.systemapp.daily.data.sync.SyncWorker
-import com.systemapp.daily.utils.NetworkResult
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -89,7 +88,7 @@ class RevisionRepository(private val context: Context) {
                 }
 
                 val response = api.enviarRevision(
-                    apiToken = "Bearer $apiToken",
+                    apiToken = tokenBody,
                     medidorId = medidorIdBody,
                     checklistJson = checklistBody,
                     observacion = obsBody,

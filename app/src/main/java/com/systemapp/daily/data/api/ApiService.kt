@@ -29,13 +29,13 @@ interface ApiService {
     // SINCRONIZACIÓN - Descarga
     // =============================================
     @GET("ordenesMacro")
-    suspend fun getOrdenesMacro(): Response<List<MacroEntity>>
+    suspend fun getOrdenesMacro(apiToken: String): Response<List<MacroEntity>>
 
     @GET("ordenesRevision")
-    suspend fun getOrdenesRevision(): Response<List<RevisionEntity>>
+    suspend fun getOrdenesRevision(apiToken: String): Response<List<RevisionEntity>>
 
     @GET("listasParametros")
-    suspend fun getListasParametros(): Response<List<ListaEntity>>
+    suspend fun getListasParametros(apiToken: String): Response<List<ListaEntity>>
 
     // =============================================
     // LECTURAS - Legacy
@@ -51,7 +51,8 @@ interface ApiService {
         @Part("medidor_id") medidorId: RequestBody,
         @Part("valor_lectura") valorLectura: RequestBody,
         @Part("observacion") observacion: RequestBody?,
-        @Part fotos: List<MultipartBody.Part>
+        @Part fotos: List<MultipartBody.Part>,
+        apiToken: RequestBody
     ): Response<LecturaResponse>
 
     // =============================================
@@ -65,7 +66,8 @@ interface ApiService {
         @Part("observacion") observacion: RequestBody?,
         @Part("gps_latitud") gpsLatitud: RequestBody?,
         @Part("gps_longitud") gpsLongitud: RequestBody?,
-        @Part fotos: List<MultipartBody.Part>
+        @Part fotos: List<MultipartBody.Part>,
+        apiToken: RequestBody
     ): Response<SyncResponse>
 
     // =============================================
@@ -80,7 +82,8 @@ interface ApiService {
         @Part("latitud") latitud: RequestBody?,
         @Part("longitud") longitud: RequestBody?,
         @Part fotos: List<MultipartBody.Part>,
-        @Part actaPdf: MultipartBody.Part?
+        @Part actaPdf: MultipartBody.Part?,
+        apiToken: RequestBody
     ): Response<RevisionResponse>
 
     @Multipart
@@ -103,6 +106,7 @@ interface ApiService {
         @Part("gps_longitud") gpsLongitud: RequestBody?,
         @Part fotos: List<MultipartBody.Part>,
         @Part firmaCliente: MultipartBody.Part?,
-        @Part actaPdf: MultipartBody.Part?
+        @Part actaPdf: MultipartBody.Part?,
+        apiToken: RequestBody
     ): Response<SyncResponse>
 }

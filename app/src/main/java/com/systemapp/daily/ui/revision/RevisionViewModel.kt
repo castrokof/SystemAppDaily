@@ -1,5 +1,6 @@
 package com.systemapp.daily.ui.revision
 
+import android.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -37,7 +38,7 @@ class RevisionViewModel(application: Application) : AndroidViewModel(application
         _syncStatus.value = null
         viewModelScope.launch {
             val result = repository.enviarRevision(
-                apiToken = apiToken,
+
                 medidorId = medidorId,
                 refMedidor = refMedidor,
                 suscriptor = suscriptor,
@@ -47,7 +48,8 @@ class RevisionViewModel(application: Application) : AndroidViewModel(application
                 latitud = latitud,
                 longitud = longitud,
                 fotoPaths = fotoPaths,
-                usuario = usuario
+                usuario = usuario,
+                apiToken = apiToken,
             )
             _isLoading.value = false
             _syncStatus.value = result

@@ -98,13 +98,13 @@ class MacroViewModel(application: Application) : AndroidViewModel(application) {
                     }
 
                     val response = api.enviarMacro(
-                        apiToken = apiToken.toRequestBody(textPlain),
+                        apiToken = apiToken.toRequestBody("text/plain".toMediaTypeOrNull()),
                         idOrden = idOrden.toString().toRequestBody(textPlain),
                         lecturaActual = lecturaActual.toRequestBody(textPlain),
                         observacion = observacion?.toRequestBody(textPlain),
                         gpsLatitud = latitud?.toString()?.toRequestBody(textPlain),
                         gpsLongitud = longitud?.toString()?.toRequestBody(textPlain),
-                        fotos = fotoParts
+                            fotos = fotoParts
                     )
 
                     if (response.isSuccessful && response.body()?.success == true) {

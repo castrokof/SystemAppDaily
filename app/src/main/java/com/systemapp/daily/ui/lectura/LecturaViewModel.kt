@@ -46,10 +46,10 @@ class LecturaViewModel(application: Application) : AndroidViewModel(application)
 
     fun getCantidadFotos(): Int = _fotos.value?.size ?: 0
 
-    fun checkPuedeLeer(token: String, macroId: Int) {
+    fun checkPuedeLeer( macroId: Int) {
         _checkResult.value = NetworkResult.Loading
         viewModelScope.launch {
-            _checkResult.value = repository.checkPuedeLeer(token, macroId)
+            _checkResult.value = repository.checkPuedeLeer( macroId)
         }
     }
 

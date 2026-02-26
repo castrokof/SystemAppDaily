@@ -101,7 +101,7 @@ class OrdenRevision extends Model
     /**
      * Crear una orden de revision a partir de una lectura critica (ordenescu).
      */
-    public static function crearDesdeLecrura($lectura, $usuarioId, $motivoRevision = null)
+    public static function crearDesdeLectura($lectura, $usuarioId, $motivoRevision = null)
     {
         // Determinar motivo automaticamente segun la critica
         if (!$motivoRevision) {

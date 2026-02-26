@@ -12,11 +12,19 @@
 
 Route::group(['middleware' => 'auth'], function () {
 
-    // Vista de criticas (supervisor selecciona lecturas para revision)
+    // Vista de criticas (supervisor ve lecturas con Estado=4)
     Route::get('revisiones/criticas', 'RevisionController@criticas')
         ->name('revisiones.criticas');
 
-    // Generar ordenes de revision a partir de lecturas seleccionadas
+    // AJAX: marcar lecturas para revision (Coordenada = 'generar')
+    Route::post('revisiones/adicionar-critica', 'RevisionController@adicionarcritica')
+        ->name('revisiones.adicionar-critica');
+
+    // AJAX: desmarcar lecturas (Coordenada = NULL)
+    Route::post('revisiones/eliminar-critica', 'RevisionController@eliminarcritica')
+        ->name('revisiones.eliminar-critica');
+
+    // Generar ordenes de revision desde las marcadas
     Route::post('revisiones/generar', 'RevisionController@generar')
         ->name('revisiones.generar');
 

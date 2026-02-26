@@ -89,6 +89,8 @@ Route::post('macromedidores/{id}/resetear', 'MacromedidorController@resetear');
 
 // ======= REVISIONES =======
 Route::get('revisiones/criticas', 'RevisionController@criticas')->name('revisiones.criticas');
+Route::post('revisiones/adicionar-critica', 'RevisionController@adicionarcritica')->name('revisiones.adicionar-critica');
+Route::post('revisiones/eliminar-critica', 'RevisionController@eliminarcritica')->name('revisiones.eliminar-critica');
 Route::post('revisiones/generar', 'RevisionController@generar')->name('revisiones.generar');
 Route::post('revisiones/{id}/reasignar', 'RevisionController@reasignar')->name('revisiones.reasignar');
 Route::get('revisiones', 'RevisionController@index')->name('revisiones.index');

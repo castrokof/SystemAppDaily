@@ -76,7 +76,7 @@ class ListasParametrosSeeder extends Seeder
         ];
 
         foreach ($listas as $item) {
-            \App\ListaParametro::firstOrCreate(
+            \App\Models\ListaParametro::firstOrCreate(
                 ['tipo_lista' => $item['tipo_lista'], 'codigo' => $item['codigo']],
                 ['descripcion' => $item['descripcion'], 'activo' => true]
             );

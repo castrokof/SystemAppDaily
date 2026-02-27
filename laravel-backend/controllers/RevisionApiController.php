@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\OrdenRevision;
-use App\CensoHidraulico;
-use App\RevisionFoto;
-use App\ListaParametro;
-use App\User;
+use App\Models\OrdenRevision;
+use App\Models\CensoHidraulico;
+use App\Models\RevisionFoto;
+use App\Models\ListaParametro;
+use App\Models\Seguridad\Usuario;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -36,7 +36,7 @@ class RevisionApiController extends Controller
             return response()->json(['error' => 'api_token requerido'], 401);
         }
 
-        $user = User::where('api_token', $apiToken)->first();
+        $user = Usuario::where('api_token', $apiToken)->first();
         if (!$user) {
             return response()->json(['error' => 'Token invalido'], 401);
         }
@@ -83,7 +83,7 @@ class RevisionApiController extends Controller
             ], 401);
         }
 
-        $user = User::where('api_token', $apiToken)->first();
+        $user = Usuario::where('api_token', $apiToken)->first();
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -199,7 +199,7 @@ class RevisionApiController extends Controller
             return response()->json(['error' => 'api_token requerido'], 401);
         }
 
-        $user = User::where('api_token', $apiToken)->first();
+        $user = Usuario::where('api_token', $apiToken)->first();
         if (!$user) {
             return response()->json(['error' => 'Token invalido'], 401);
         }

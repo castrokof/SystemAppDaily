@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Macromedidor;
-use App\User;
+use App\Models\Macromedidor;
+use App\Models\Seguridad\Usuario;
 use Illuminate\Http\Request;
 
 /**
@@ -39,7 +39,7 @@ class MacromedidorController extends Controller
         }
 
         $macros = $query->orderBy('created_at', 'desc')->paginate(20);
-        $usuarios = User::orderBy('nombre')->pluck('nombre', 'id');
+        $usuarios = Usuario::orderBy('nombre')->pluck('nombre', 'id');
 
         return view('macromedidores.index', compact('macros', 'usuarios'));
     }
@@ -50,7 +50,7 @@ class MacromedidorController extends Controller
      */
     public function create()
     {
-        $usuarios = User::orderBy('nombre')->pluck('nombre', 'id');
+        $usuarios = Usuario::orderBy('nombre')->pluck('nombre', 'id');
         return view('macromedidores.create', compact('usuarios'));
     }
 
@@ -64,7 +64,7 @@ class MacromedidorController extends Controller
             'codigo_macro'    => 'required|string|unique:macromedidores,codigo_macro',
             'ubicacion'       => 'nullable|string|max:500',
             'lectura_anterior' => 'nullable|integer|min:0',
-            'usuario_id'      => 'required|exists:users,id',
+            'usuario_id'      => 'required|exists:usuario,id',
         ]);
 
         Macromedidor::create([
@@ -96,7 +96,7 @@ class MacromedidorController extends Controller
     public function edit($id)
     {
         $macro = Macromedidor::findOrFail($id);
-        $usuarios = User::orderBy('nombre')->pluck('nombre', 'id');
+        $usuarios = Usuario::orderBy('nombre')->pluck('nombre', 'id');
         return view('macromedidores.edit', compact('macro', 'usuarios'));
     }
 
@@ -112,7 +112,7 @@ class MacromedidorController extends Controller
             'codigo_macro'    => 'required|string|unique:macromedidores,codigo_macro,' . $id,
             'ubicacion'       => 'nullable|string|max:500',
             'lectura_anterior' => 'nullable|integer|min:0',
-            'usuario_id'      => 'required|exists:users,id',
+            'usuario_id'      => 'required|exists:usuario,id',
         ]);
 
         $macro->update([

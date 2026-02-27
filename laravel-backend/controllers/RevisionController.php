@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\OrdenRevision;
-use App\ListaParametro;
-use App\User;
+use App\Models\OrdenRevision;
+use App\Models\ListaParametro;
+use App\Models\Seguridad\Usuario;
 use App\Models\Admin\Ordenesmtl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,7 +50,7 @@ class RevisionController extends Controller
         }
 
         $revisiones = $query->orderBy('created_at', 'desc')->paginate(20);
-        $usuarios = User::orderBy('nombre')->pluck('nombre', 'id');
+        $usuarios = Usuario::orderBy('nombre')->pluck('nombre', 'id');
 
         return view('revisiones.index', compact('revisiones', 'usuarios'));
     }
@@ -109,7 +109,7 @@ class RevisionController extends Controller
         $totalMarcadas = Ordenesmtl::where('Estado', 4)->where('Coordenada', 'generar')->count();
 
         // Usuarios revisores para asignar
-        $revisores = User::orderBy('nombre')->pluck('nombre', 'id');
+        $revisores = Usuario::orderBy('nombre')->pluck('nombre', 'id');
 
         return view('revisiones.criticas', compact(
             'criticas', 'tiposCritica', 'revisores', 'totalCriticas', 'totalMarcadas'
@@ -177,7 +177,7 @@ class RevisionController extends Controller
     public function generar(Request $request)
     {
         $this->validate($request, [
-            'usuario_id' => 'required|exists:users,id',
+            'usuario_id' => 'required|exists:usuario,id',
         ]);
 
         $usuarioId = $request->input('usuario_id');
@@ -261,7 +261,7 @@ class RevisionController extends Controller
     public function reasignar(Request $request, $id)
     {
         $this->validate($request, [
-            'usuario_id' => 'required|exists:users,id',
+            'usuario_id' => 'required|exists:usuario,id',
         ]);
 
         $revision = OrdenRevision::findOrFail($id);

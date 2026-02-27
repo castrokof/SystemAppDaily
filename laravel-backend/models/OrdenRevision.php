@@ -1,8 +1,9 @@
 <?php
 
-namespace App;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Seguridad\Usuario;
 
 class OrdenRevision extends Model
 {
@@ -62,7 +63,7 @@ class OrdenRevision extends Model
 
     public function usuario()
     {
-        return $this->belongsTo(User::class, 'usuario_id');
+        return $this->belongsTo(Usuario::class, 'usuario_id');
     }
 
     public function censoHidraulico()

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Macromedidor;
-use App\MacroFoto;
-use App\User;
+use App\Models\Macromedidor;
+use App\Models\MacroFoto;
+use App\Models\Seguridad\Usuario;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -51,7 +51,7 @@ class MacromedidorApiController extends Controller
             return response()->json(['error' => 'api_token requerido'], 401);
         }
 
-        $user = User::where('api_token', $apiToken)->first();
+        $user = Usuario::where('api_token', $apiToken)->first();
         if (!$user) {
             return response()->json(['error' => 'Token invalido'], 401);
         }
@@ -97,7 +97,7 @@ class MacromedidorApiController extends Controller
             ], 401);
         }
 
-        $user = User::where('api_token', $apiToken)->first();
+        $user = Usuario::where('api_token', $apiToken)->first();
         if (!$user) {
             return response()->json([
                 'success' => false,

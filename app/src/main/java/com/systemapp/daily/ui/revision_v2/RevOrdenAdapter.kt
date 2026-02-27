@@ -1,34 +1,66 @@
 package com.systemapp.daily.ui.revision_v2
 
+import android.annotation.SuppressLint
 import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.systemapp.daily.R
 import com.systemapp.daily.data.model.EstadoOrden
 import com.systemapp.daily.data.model.RevisionEntity
+import java.util.Collections
 
 class RevOrdenAdapter(
     private val showSyncStatus: Boolean = false,
     private val onItemClick: (RevisionEntity) -> Unit
-) : ListAdapter<RevOrdenAdapter.RevItem, RevOrdenAdapter.ViewHolder>(DiffCallback()) {
+) : RecyclerView.Adapter<RevOrdenAdapter.ViewHolder>() {
 
     data class RevItem(
         val revision: RevisionEntity,
         val syncStatus: String? = null
     )
 
+    private val items = mutableListOf<RevItem>()
+
+    // Callback para iniciar drag desde el handle
+    var onStartDrag: ((RecyclerView.ViewHolder) -> Unit)? = null
+
+    fun submitList(newList: List<RevItem>) {
+        items.clear()
+        items.addAll(newList)
+        notifyDataSetChanged()
+    }
+
+    fun moveItem(fromPosition: Int, toPosition: Int) {
+        if (fromPosition < 0 || toPosition < 0 || fromPosition >= items.size || toPosition >= items.size) return
+        Collections.swap(items, fromPosition, toPosition)
+        notifyItemMoved(fromPosition, toPosition)
+    }
+
+    fun getItems(): List<RevItem> = items.toList()
+
+    override fun getItemCount(): Int = items.size
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_revision_orden, parent, false)
         return ViewHolder(view)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        holder.bind(items[position])
+
+        // Iniciar drag al tocar el handle
+        holder.dragHandle.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                onStartDrag?.invoke(holder)
+            }
+            false
+        }
     }
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -38,6 +70,7 @@ class RevOrdenAdapter(
         private val tvMotivo: TextView = itemView.findViewById(R.id.tvMotivo)
         private val tvNombreAtiende: TextView = itemView.findViewById(R.id.tvNombreAtiende)
         private val tvFecha: TextView = itemView.findViewById(R.id.tvFecha)
+        val dragHandle: ImageView = itemView.findViewById(R.id.ivDragHandle)
 
         fun bind(item: RevItem) {
             val rev = item.revision
@@ -64,10 +97,5 @@ class RevOrdenAdapter(
 
             itemView.findViewById<View>(R.id.cardOrden).setOnClickListener { onItemClick(rev) }
         }
-    }
-
-    class DiffCallback : DiffUtil.ItemCallback<RevItem>() {
-        override fun areItemsTheSame(oldItem: RevItem, newItem: RevItem) = oldItem.revision.idOrden == newItem.revision.idOrden
-        override fun areContentsTheSame(oldItem: RevItem, newItem: RevItem) = oldItem == newItem
     }
 }

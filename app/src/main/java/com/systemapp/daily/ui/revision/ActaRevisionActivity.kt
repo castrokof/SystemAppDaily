@@ -206,7 +206,7 @@ class ActaRevisionActivity : AppCompatActivity() {
         val allFiles = ArrayList(fotoPaths)
         actaPdfFile?.let { allFiles.add(it.absolutePath) }
 
-        val apiToken = ""
+        val apiToken = sessionManager.apiToken ?: ""
         viewModel.enviarRevision(
 
             medidorId = medidorId,

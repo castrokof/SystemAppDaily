@@ -9,6 +9,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -18,10 +20,13 @@ import com.systemapp.daily.R
 import com.systemapp.daily.data.model.ChecklistAcueducto
 import com.systemapp.daily.data.model.EstadoCheck
 import com.systemapp.daily.databinding.ActivityRevisionBinding
-import com.systemapp.daily.ui.lectura.CameraActivity
 import com.systemapp.daily.ui.lectura.FotoAdapter
 import com.systemapp.daily.utils.Constants
 import com.systemapp.daily.utils.SessionManager
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class RevisionActivity : AppCompatActivity() {
 
@@ -35,6 +40,7 @@ class RevisionActivity : AppCompatActivity() {
     private val fotoPaths = mutableListOf<String>()
     private var currentLatitud: Double? = null
     private var currentLongitud: Double? = null
+    private var currentPhotoPath: String? = null
 
     private var medidorId: Int = 0
     private var medidorNombre: String = ""
@@ -42,25 +48,38 @@ class RevisionActivity : AppCompatActivity() {
     private var medidorSuscriptor: String? = null
     private var medidorDireccion: String? = null
 
-    private val cameraLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val photoPath = result.data?.getStringExtra(Constants.EXTRA_PHOTO_PATH)
-            if (photoPath != null) {
-                fotoPaths.add(photoPath)
-                fotoAdapter.notifyItemInserted(fotoPaths.size - 1)
-                updateFotoCount()
-                updateEnviarButton()
+    // Usa la camara del sistema (TakePicture) en vez de CameraX para mayor compatibilidad
+    private val takePictureLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        val photoFile = currentPhotoPath?.let { File(it) }
+        val photoSaved = success || (photoFile != null && photoFile.exists() && photoFile.length() > 0)
+
+        if (photoSaved && currentPhotoPath != null) {
+            fotoPaths.add(currentPhotoPath!!)
+            fotoAdapter.updateFotos(fotoPaths)
+            updateFotoCount()
+            updateEnviarButton()
+        } else {
+            currentPhotoPath?.let { path ->
+                val file = File(path)
+                if (file.exists() && file.length() == 0L) file.delete()
             }
+            currentPhotoPath = null
         }
+    }
+
+    private val cameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) abrirCamara()
+        else Toast.makeText(this, "Se requiere permiso de cámara para tomar fotos", Toast.LENGTH_LONG).show()
     }
 
     private val actaLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            // Acta generada, firmada y enviada exitosamente
             finish()
         }
     }
@@ -73,6 +92,13 @@ class RevisionActivity : AppCompatActivity() {
         if (fineGranted || coarseGranted) {
             obtenerUbicacion()
         }
+    }
+
+    companion object {
+        const val EXTRA_SUSCRIPTOR = "extra_suscriptor"
+        const val EXTRA_DIRECCION = "extra_direccion"
+        private const val STATE_FOTO_PATHS = "state_foto_paths"
+        private const val STATE_CURRENT_PHOTO_PATH = "state_current_photo_path"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,11 +115,25 @@ class RevisionActivity : AppCompatActivity() {
         medidorSuscriptor = intent.getStringExtra(EXTRA_SUSCRIPTOR)
         medidorDireccion = intent.getStringExtra(EXTRA_DIRECCION)
 
+        savedInstanceState?.let {
+            it.getStringArrayList(STATE_FOTO_PATHS)?.let { saved ->
+                fotoPaths.clear()
+                fotoPaths.addAll(saved)
+            }
+            currentPhotoPath = it.getString(STATE_CURRENT_PHOTO_PATH)
+        }
+
         setupToolbar()
         setupChecklist()
         setupFotos()
         setupButtons()
         solicitarUbicacion()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putStringArrayList(STATE_FOTO_PATHS, ArrayList(fotoPaths))
+        outState.putString(STATE_CURRENT_PHOTO_PATH, currentPhotoPath)
     }
 
     private fun setupToolbar() {
@@ -134,11 +174,39 @@ class RevisionActivity : AppCompatActivity() {
                 Toast.makeText(this, "Máximo ${Constants.MAX_FOTOS_POR_LECTURA} fotos", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            cameraLauncher.launch(Intent(this, CameraActivity::class.java))
+            checkCameraPermissionAndOpen()
         }
 
         binding.btnEnviarRevision.setOnClickListener {
             enviarRevision()
+        }
+    }
+
+    private fun checkCameraPermissionAndOpen() {
+        when {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED -> abrirCamara()
+            else -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun abrirCamara() {
+        val photoFile = createPhotoFile() ?: run {
+            Toast.makeText(this, "Error al crear archivo de foto", Toast.LENGTH_SHORT).show()
+            return
+        }
+        currentPhotoPath = photoFile.absolutePath
+        val photoUri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", photoFile)
+        takePictureLauncher.launch(photoUri)
+    }
+
+    private fun createPhotoFile(): File? {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir = getExternalFilesDir("Pictures") ?: filesDir
+        if (!storageDir.exists()) storageDir.mkdirs()
+        return try {
+            File.createTempFile("REVISION_${timeStamp}_", ".jpg", storageDir)
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -184,13 +252,11 @@ class RevisionActivity : AppCompatActivity() {
     }
 
     private fun enviarRevision() {
-        // Verificar que al menos se hayan tomado las fotos mínimas
         if (fotoPaths.size < Constants.MIN_FOTOS_POR_LECTURA) {
             Toast.makeText(this, "Debe tomar al menos ${Constants.MIN_FOTOS_POR_LECTURA} fotos", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Verificar que al menos un ítem del checklist fue revisado
         val revisados = checklistItems.count { it.estado != EstadoCheck.NO_REVISADO }
         if (revisados == 0) {
             Toast.makeText(this, "Debe revisar al menos un ítem del checklist", Toast.LENGTH_SHORT).show()
@@ -199,7 +265,6 @@ class RevisionActivity : AppCompatActivity() {
 
         val observacion = binding.etObservacionRevision.text.toString().trim().ifEmpty { null }
 
-        // Convertir checklist a JSON
         val checklistData = checklistItems.map { item ->
             mapOf(
                 "id" to item.id,
@@ -211,7 +276,6 @@ class RevisionActivity : AppCompatActivity() {
         }
         val checklistJson = Gson().toJson(checklistData)
 
-        // Navegar al ActaRevisionActivity para firmar e imprimir
         val intent = Intent(this, ActaRevisionActivity::class.java).apply {
             putExtra(Constants.EXTRA_MACRO_ID, medidorId)
             putExtra(Constants.EXTRA_MACRO_NOMBRE, medidorNombre)
@@ -225,10 +289,5 @@ class RevisionActivity : AppCompatActivity() {
             putStringArrayListExtra(ActaRevisionActivity.EXTRA_FOTO_PATHS, ArrayList(fotoPaths))
         }
         actaLauncher.launch(intent)
-    }
-
-    companion object {
-        const val EXTRA_SUSCRIPTOR = "extra_suscriptor"
-        const val EXTRA_DIRECCION = "extra_direccion"
     }
 }

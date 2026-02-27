@@ -231,6 +231,34 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
     val pendientes: LiveData<List<RevisionEntity>> = ordenRevisionDao.getPendientes().flowOn(Dispatchers.IO).asLiveData()
     val ejecutados: LiveData<List<RevisionEntity>> = ordenRevisionDao.getEjecutados().flowOn(Dispatchers.IO).asLiveData()
 
+    // Search
+    private val _searchQueryPendientes = MutableLiveData("")
+    private val _searchQueryEjecutados = MutableLiveData("")
+
+    val pendientesFiltrados: LiveData<List<RevisionEntity>> = _searchQueryPendientes.switchMap { query ->
+        if (query.isNullOrBlank()) {
+            ordenRevisionDao.getPendientes().flowOn(Dispatchers.IO).asLiveData()
+        } else {
+            ordenRevisionDao.buscarPendientes(query).flowOn(Dispatchers.IO).asLiveData()
+        }
+    }
+
+    val ejecutadosFiltrados: LiveData<List<RevisionEntity>> = _searchQueryEjecutados.switchMap { query ->
+        if (query.isNullOrBlank()) {
+            ordenRevisionDao.getEjecutados().flowOn(Dispatchers.IO).asLiveData()
+        } else {
+            ordenRevisionDao.buscarEjecutados(query).flowOn(Dispatchers.IO).asLiveData()
+        }
+    }
+
+    fun buscarPendientes(query: String) {
+        _searchQueryPendientes.value = query
+    }
+
+    fun buscarEjecutados(query: String) {
+        _searchQueryEjecutados.value = query
+    }
+
     suspend fun getSyncStatus(idOrden: Int): String? {
         return syncQueueDao.getEstadoSync(TipoSync.REVISION, idOrden)
     }

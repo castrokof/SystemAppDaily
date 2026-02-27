@@ -52,7 +52,12 @@ class MacroLecturaActivity : AppCompatActivity() {
     private val takePictureLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success && currentPhotoPath != null) {
+        // En algunos dispositivos TakePicture retorna false aunque la foto se guardo correctamente.
+        // Verificar tambien si el archivo existe y tiene contenido.
+        val photoFile = currentPhotoPath?.let { File(it) }
+        val photoSaved = success || (photoFile != null && photoFile.exists() && photoFile.length() > 0)
+
+        if (photoSaved && currentPhotoPath != null) {
             fotoPaths.add(currentPhotoPath!!)
             fotoAdapter.updateFotos(fotoPaths)
             updateFotoCount()

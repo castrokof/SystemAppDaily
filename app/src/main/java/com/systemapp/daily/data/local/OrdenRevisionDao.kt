@@ -42,4 +42,10 @@ interface OrdenRevisionDao {
 
     @Query("SELECT * FROM ordenes_revision WHERE codigo_predio LIKE '%' || :query || '%'")
     fun buscar(query: String): Flow<List<RevisionEntity>>
+
+    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'PENDIENTE' AND (codigo_predio LIKE '%' || :query || '%' OR motivo_revision LIKE '%' || :query || '%' OR nombre_atiende LIKE '%' || :query || '%') ORDER BY id_orden ASC")
+    fun buscarPendientes(query: String): Flow<List<RevisionEntity>>
+
+    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'EJECUTADO' AND (codigo_predio LIKE '%' || :query || '%' OR motivo_revision LIKE '%' || :query || '%' OR nombre_atiende LIKE '%' || :query || '%') ORDER BY fecha_cierre DESC")
+    fun buscarEjecutados(query: String): Flow<List<RevisionEntity>>
 }

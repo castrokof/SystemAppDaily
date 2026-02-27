@@ -3,6 +3,9 @@
     <external-files-path
         name="lecturas_fotos"
         path="Pictures" />
+    <files-path
+        name="internal_fotos"
+        path="." />
     <cache-path
         name="cache_fotos"
         path="photos" />

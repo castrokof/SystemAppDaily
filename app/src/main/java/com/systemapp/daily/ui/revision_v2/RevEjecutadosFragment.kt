@@ -1,11 +1,13 @@
 package com.systemapp.daily.ui.revision_v2
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -14,6 +16,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.systemapp.daily.databinding.FragmentRevisionListBinding
 import com.systemapp.daily.data.model.RevisionEntity
+import com.systemapp.daily.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,7 +47,22 @@ class RevEjecutadosFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = RevOrdenAdapter(showSyncStatus = true) { _ -> }
+        adapter = RevOrdenAdapter(showSyncStatus = true) { rev ->
+            AlertDialog.Builder(requireContext())
+                .setTitle("Revisión ${rev.codigoPredio}")
+                .setMessage("¿Qué desea hacer con esta revisión?")
+                .setPositiveButton("Retomar") { _, _ ->
+                    viewModel.retomarRevision(rev.idOrden)
+                    Toast.makeText(requireContext(), "Revisión devuelta a pendientes", Toast.LENGTH_SHORT).show()
+                }
+                .setNeutralButton("Abrir") { _, _ ->
+                    val intent = Intent(requireContext(), RevisionWizardActivity::class.java)
+                    intent.putExtra(Constants.EXTRA_ORDEN_ID, rev.idOrden)
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
         binding.rvOrdenes.layoutManager = LinearLayoutManager(requireContext())
         binding.rvOrdenes.adapter = adapter
         binding.tvEmpty.text = "No hay revisiones ejecutadas"

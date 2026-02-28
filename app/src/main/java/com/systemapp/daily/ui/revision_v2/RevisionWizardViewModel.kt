@@ -262,4 +262,10 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
     suspend fun getSyncStatus(idOrden: Int): String? {
         return syncQueueDao.getEstadoSync(TipoSync.REVISION, idOrden)
     }
+
+    fun retomarRevision(idOrden: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            ordenRevisionDao.retomar(idOrden)
+        }
+    }
 }

@@ -1,12 +1,14 @@
 package com.systemapp.daily.ui.revision_v2
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.tabs.TabLayout
 import com.systemapp.daily.R
 import com.systemapp.daily.databinding.ActivityRevisionWizardBinding
 import com.systemapp.daily.utils.Constants
@@ -15,9 +17,8 @@ class RevisionWizardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRevisionWizardBinding
     val viewModel: RevisionWizardViewModel by viewModels()
-    private val stepLabels by lazy {
-        listOf(binding.tvStep1, binding.tvStep2, binding.tvStep3, binding.tvStep4, binding.tvStep5)
-    }
+
+    private val stepNames = listOf("1.Registro", "2.Predio", "3.Familia", "4.Medidor", "5.Fin")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +45,7 @@ class RevisionWizardActivity : AppCompatActivity() {
             }
         }
 
-        // Setup ViewPager2 - disable swipe, navigate only with buttons
+        // Setup ViewPager2 - disable swipe, navigate with tabs or buttons
         binding.viewPager.isUserInputEnabled = false
         binding.viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = 5
@@ -57,12 +58,28 @@ class RevisionWizardActivity : AppCompatActivity() {
             }
         }
 
+        // Setup TabLayout con los nombres de pasos
+        for (name in stepNames) {
+            binding.tabLayoutSteps.addTab(binding.tabLayoutSteps.newTab().setText(name))
+        }
+
+        // Click en tab navega al paso
+        binding.tabLayoutSteps.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                binding.viewPager.currentItem = tab.position
+                updateStepUI(tab.position)
+            }
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+
         updateStepUI(0)
 
         binding.btnAnterior.setOnClickListener {
             val current = binding.viewPager.currentItem
             if (current > 0) {
                 binding.viewPager.currentItem = current - 1
+                binding.tabLayoutSteps.selectTab(binding.tabLayoutSteps.getTabAt(current - 1))
                 updateStepUI(current - 1)
             }
         }
@@ -71,6 +88,7 @@ class RevisionWizardActivity : AppCompatActivity() {
             val current = binding.viewPager.currentItem
             if (current < 4) {
                 binding.viewPager.currentItem = current + 1
+                binding.tabLayoutSteps.selectTab(binding.tabLayoutSteps.getTabAt(current + 1))
                 updateStepUI(current + 1)
             } else {
                 // Step 5: Finalizar
@@ -109,12 +127,7 @@ class RevisionWizardActivity : AppCompatActivity() {
 
     private fun updateStepUI(step: Int) {
         binding.progressSteps.progress = step + 1
-        stepLabels.forEachIndexed { index, tv ->
-            tv.setTextColor(getColor(if (index <= step) R.color.primary else R.color.text_secondary))
-            tv.setTypeface(null, if (index == step) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
-        }
-
-        binding.btnAnterior.visibility = if (step == 0) android.view.View.INVISIBLE else android.view.View.VISIBLE
+        binding.btnAnterior.visibility = if (step == 0) View.INVISIBLE else View.VISIBLE
         binding.btnSiguiente.text = if (step == 4) "Finalizar" else "Siguiente"
     }
 }

@@ -34,6 +34,24 @@ class MacroViewModel(application: Application) : AndroidViewModel(application) {
     private val _orden = MutableLiveData<MacroEntity?>()
     val orden: LiveData<MacroEntity?> = _orden
 
+    // Fotos en LiveData (sobrevive recreacion de activity)
+    private val _fotos = MutableLiveData<MutableList<String>>(mutableListOf())
+    val fotos: LiveData<MutableList<String>> = _fotos
+
+    fun agregarFoto(path: String) {
+        val list = _fotos.value ?: mutableListOf()
+        list.add(path)
+        _fotos.value = list
+    }
+
+    fun eliminarFoto(index: Int) {
+        val list = _fotos.value ?: mutableListOf()
+        if (index in list.indices) {
+            list.removeAt(index)
+            _fotos.value = list
+        }
+    }
+
     sealed class SaveResult {
         data class Success(val message: String) : SaveResult()
         data class SavedLocal(val message: String) : SaveResult()

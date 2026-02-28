@@ -37,7 +37,6 @@ class MacroLecturaActivity : AppCompatActivity() {
     private var idOrden: Int = -1
     private var gpsLatitud: Double? = null
     private var gpsLongitud: Double? = null
-    private val fotoPaths = mutableListOf<String>()
 
     // Ruta del archivo de foto actual (para la camara del sistema)
     private var currentPhotoPath: String? = null
@@ -47,43 +46,38 @@ class MacroLecturaActivity : AppCompatActivity() {
 
     /**
      * Usa la camara del sistema (ACTION_IMAGE_CAPTURE) via TakePicture().
-     * Mucho mas confiable que CameraX en todos los dispositivos.
+     * Al retornar, agrega la foto al ViewModel (igual que en revisiones).
      */
     private val takePictureLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
-        // En algunos dispositivos TakePicture retorna false aunque la foto se guardo correctamente.
-        // Verificar tambien si el archivo existe y tiene contenido.
         val photoFile = currentPhotoPath?.let { File(it) }
         val photoSaved = success || (photoFile != null && photoFile.exists() && photoFile.length() > 0)
 
         if (photoSaved && currentPhotoPath != null) {
-            fotoPaths.add(currentPhotoPath!!)
-            fotoAdapter.updateFotos(fotoPaths)
-            updateFotoCount()
-            updateValidarButton()
+            // Guardar en ViewModel (sobrevive recreacion de activity)
+            viewModel.agregarFoto(currentPhotoPath!!)
 
             if (autoFotoMode) {
-                if (fotoPaths.size < Constants.MIN_FOTOS_POR_LECTURA) {
-                    // Faltan fotos, abrir camara de nuevo
-                    val faltantes = Constants.MIN_FOTOS_POR_LECTURA - fotoPaths.size
+                val fotosSize = viewModel.fotos.value?.size ?: 0
+                if (fotosSize < Constants.MIN_FOTOS_POR_LECTURA) {
+                    val faltantes = Constants.MIN_FOTOS_POR_LECTURA - fotosSize
                     Toast.makeText(
                         this,
-                        "Foto ${fotoPaths.size}/${Constants.MIN_FOTOS_POR_LECTURA} - Tome $faltantes mas",
+                        "Foto $fotosSize/${Constants.MIN_FOTOS_POR_LECTURA} - Tome $faltantes mas",
                         Toast.LENGTH_SHORT
                     ).show()
                     abrirCamara()
                 } else {
-                    // Ya tiene suficientes fotos, proceder a guardar
                     autoFotoMode = false
                     validarYGuardar()
                 }
             }
         } else {
-            // Usuario cancelo la camara
             if (autoFotoMode) {
                 autoFotoMode = false
-                if (fotoPaths.size < Constants.MIN_FOTOS_POR_LECTURA) {
+                val fotosSize = viewModel.fotos.value?.size ?: 0
+                if (fotosSize < Constants.MIN_FOTOS_POR_LECTURA) {
                     Toast.makeText(
                         this,
                         "Se necesitan ${Constants.MIN_FOTOS_POR_LECTURA} fotos para guardar",
@@ -91,7 +85,6 @@ class MacroLecturaActivity : AppCompatActivity() {
                     ).show()
                 }
             }
-            // Eliminar archivo vacio si la foto no se tomo
             currentPhotoPath?.let { path ->
                 val file = File(path)
                 if (file.exists() && file.length() == 0L) file.delete()
@@ -108,7 +101,6 @@ class MacroLecturaActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val STATE_FOTO_PATHS = "state_foto_paths"
         private const val STATE_CURRENT_PHOTO_PATH = "state_current_photo_path"
         private const val STATE_AUTO_FOTO_MODE = "state_auto_foto_mode"
     }
@@ -127,12 +119,7 @@ class MacroLecturaActivity : AppCompatActivity() {
             return
         }
 
-        // Restaurar estado si la actividad fue recreada
         savedInstanceState?.let {
-            it.getStringArrayList(STATE_FOTO_PATHS)?.let { saved ->
-                fotoPaths.clear()
-                fotoPaths.addAll(saved)
-            }
             currentPhotoPath = it.getString(STATE_CURRENT_PHOTO_PATH)
             autoFotoMode = it.getBoolean(STATE_AUTO_FOTO_MODE, false)
         }
@@ -146,7 +133,6 @@ class MacroLecturaActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putStringArrayList(STATE_FOTO_PATHS, ArrayList(fotoPaths))
         outState.putString(STATE_CURRENT_PHOTO_PATH, currentPhotoPath)
         outState.putBoolean(STATE_AUTO_FOTO_MODE, autoFotoMode)
     }
@@ -158,7 +144,8 @@ class MacroLecturaActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
         binding.btnTomarFoto.setOnClickListener {
-            if (fotoPaths.size >= Constants.MAX_FOTOS_POR_LECTURA) {
+            val fotosSize = viewModel.fotos.value?.size ?: 0
+            if (fotosSize >= Constants.MAX_FOTOS_POR_LECTURA) {
                 Toast.makeText(this, "Maximo ${Constants.MAX_FOTOS_POR_LECTURA} fotos", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -173,10 +160,10 @@ class MacroLecturaActivity : AppCompatActivity() {
             }
             binding.tilLectura.error = null
 
-            if (fotoPaths.size < Constants.MIN_FOTOS_POR_LECTURA) {
-                // Activar modo auto-foto: abrir camara para las fotos que faltan
+            val fotosSize = viewModel.fotos.value?.size ?: 0
+            if (fotosSize < Constants.MIN_FOTOS_POR_LECTURA) {
                 autoFotoMode = true
-                val faltantes = Constants.MIN_FOTOS_POR_LECTURA - fotoPaths.size
+                val faltantes = Constants.MIN_FOTOS_POR_LECTURA - fotosSize
                 Toast.makeText(this, "Tome $faltantes foto(s)", Toast.LENGTH_SHORT).show()
                 checkCameraPermissionAndOpen()
                 return@setOnClickListener
@@ -205,16 +192,13 @@ class MacroLecturaActivity : AppCompatActivity() {
     }
 
     private fun setupFotos() {
-        fotoAdapter = FotoAdapter(fotoPaths) { index ->
+        // Inicializar con lista vacia, el observer de fotos la actualizara
+        fotoAdapter = FotoAdapter(mutableListOf()) { index ->
             AlertDialog.Builder(this)
                 .setTitle("Eliminar foto")
                 .setMessage("Eliminar esta foto?")
                 .setPositiveButton("Si") { _, _ ->
-                    fotoPaths.removeAt(index)
-                    fotoAdapter.notifyItemRemoved(index)
-                    fotoAdapter.notifyItemRangeChanged(index, fotoPaths.size)
-                    updateFotoCount()
-                    updateValidarButton()
+                    viewModel.eliminarFoto(index)
                 }
                 .setNegativeButton("No", null)
                 .show()
@@ -226,6 +210,13 @@ class MacroLecturaActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
+        // Observer de fotos (igual que en revisiones) - unica fuente de verdad
+        viewModel.fotos.observe(this) { fotos ->
+            fotoAdapter.updateFotos(fotos)
+            updateFotoCount()
+            updateValidarButton()
+        }
+
         viewModel.orden.observe(this) { orden ->
             if (orden != null) {
                 binding.tvOrdenCodigo.text = "Macro: ${orden.codigoMacro}"
@@ -325,7 +316,7 @@ class MacroLecturaActivity : AppCompatActivity() {
     }
 
     private fun updateFotoCount() {
-        val count = fotoPaths.size
+        val count = viewModel.fotos.value?.size ?: 0
         val min = Constants.MIN_FOTOS_POR_LECTURA
         binding.tvFotoCount.text = "Fotos: $count / $min minimo"
         binding.tvFotoCount.setTextColor(
@@ -335,9 +326,9 @@ class MacroLecturaActivity : AppCompatActivity() {
 
     private fun updateValidarButton() {
         val lecturaOk = binding.etLectura.text.toString().trim().isNotEmpty()
-        val fotosOk = fotoPaths.size >= Constants.MIN_FOTOS_POR_LECTURA
+        val fotosSize = viewModel.fotos.value?.size ?: 0
+        val fotosOk = fotosSize >= Constants.MIN_FOTOS_POR_LECTURA
 
-        // Boton habilitado con solo lectura (si faltan fotos se abren automaticamente al tocar)
         binding.btnValidar.isEnabled = lecturaOk
 
         binding.btnValidar.text = if (lecturaOk && !fotosOk) {
@@ -357,6 +348,7 @@ class MacroLecturaActivity : AppCompatActivity() {
         }
         binding.tilLectura.error = null
 
+        val fotoPaths = viewModel.fotos.value ?: emptyList()
         if (fotoPaths.size < Constants.MIN_FOTOS_POR_LECTURA) {
             Toast.makeText(this, "Debe tomar al menos ${Constants.MIN_FOTOS_POR_LECTURA} fotos", Toast.LENGTH_LONG).show()
             return
@@ -380,6 +372,7 @@ class MacroLecturaActivity : AppCompatActivity() {
     }
 
     private fun ejecutarGuardado(lectura: String, observacion: String) {
+        val fotoPaths = viewModel.fotos.value ?: emptyList()
         AlertDialog.Builder(this)
             .setTitle("Confirmar lectura")
             .setMessage("Macro: ${viewModel.orden.value?.codigoMacro}\nLectura: $lectura\nFotos: ${fotoPaths.size}\n\nValidar y guardar?")

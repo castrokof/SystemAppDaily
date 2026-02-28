@@ -59,6 +59,12 @@ data class RevisionEntity(
     @ColumnInfo(name = "fecha_cierre")
     val fechaCierre: String? = null,
 
+    @ColumnInfo(name = "lectura_actual")
+    val lecturaActual: String? = null,
+
+    @ColumnInfo(name = "acta_pdf_path")
+    val actaPdfPath: String? = null,
+
     val sincronizado: Boolean = false
 )
 

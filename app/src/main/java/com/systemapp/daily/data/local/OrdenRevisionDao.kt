@@ -48,4 +48,7 @@ interface OrdenRevisionDao {
 
     @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'EJECUTADO' AND (codigo_predio LIKE '%' || :query || '%' OR motivo_revision LIKE '%' || :query || '%' OR nombre_atiende LIKE '%' || :query || '%') ORDER BY fecha_cierre DESC")
     fun buscarEjecutados(query: String): Flow<List<RevisionEntity>>
+
+    @Query("UPDATE ordenes_revision SET estado_orden = 'PENDIENTE', fecha_cierre = NULL, sincronizado = 0 WHERE id_orden = :idOrden")
+    suspend fun retomar(idOrden: Int)
 }

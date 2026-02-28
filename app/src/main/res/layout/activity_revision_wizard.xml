@@ -15,22 +15,21 @@
         app:subtitleTextColor="@android:color/white"
         app:navigationIconTint="@android:color/white" />
 
-    <!-- Progress Steps -->
-    <LinearLayout
+    <!-- TabLayout clickeable para navegar entre pasos -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayoutSteps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center"
-        android:background="@color/surface">
-
-        <TextView android:id="@+id/tvStep1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="1.Registro" android:textSize="11sp" android:textAlignment="center" android:textStyle="bold" />
-        <TextView android:id="@+id/tvStep2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="2.Predio" android:textSize="11sp" android:textAlignment="center" />
-        <TextView android:id="@+id/tvStep3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="3.Familia" android:textSize="11sp" android:textAlignment="center" />
-        <TextView android:id="@+id/tvStep4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="4.Medidor" android:textSize="11sp" android:textAlignment="center" />
-        <TextView android:id="@+id/tvStep5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="5.Fin" android:textSize="11sp" android:textAlignment="center" />
-
-    </LinearLayout>
+        android:background="@color/primary"
+        app:tabTextColor="#B0FFFFFF"
+        app:tabSelectedTextColor="@android:color/white"
+        app:tabIndicatorColor="@android:color/white"
+        app:tabIndicatorHeight="3dp"
+        app:tabMode="scrollable"
+        app:tabGravity="fill"
+        app:tabMinWidth="0dp"
+        app:tabPaddingStart="8dp"
+        app:tabPaddingEnd="8dp" />
 
     <ProgressBar
         android:id="@+id/progressSteps"

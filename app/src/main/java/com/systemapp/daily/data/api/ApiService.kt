@@ -101,6 +101,7 @@ interface ApiService {
         @Part("motivo_detalle") motivoDetalle: RequestBody?,
         @Part("generalidades") generalidades: RequestBody?,
         @Part("censo_hidraulico_json") censoHidraulicoJson: RequestBody?,
+        @Part("lectura_actual") lecturaActual: RequestBody?,
         @Part("gps_latitud") gpsLatitud: RequestBody?,
         @Part("gps_longitud") gpsLongitud: RequestBody?,
         @Part fotos: List<MultipartBody.Part>,

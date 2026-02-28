@@ -52,5 +52,6 @@ object EstadoSync {
 object TipoSync {
     const val LECTURA = "LECTURA"
     const val REVISION = "REVISION"
+    const val REVISION_V2 = "REVISION_V2"
     const val MACRO = "MACRO"
 }

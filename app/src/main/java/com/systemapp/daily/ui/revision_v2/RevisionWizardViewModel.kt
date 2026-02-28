@@ -52,6 +52,9 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
     var numFamilias: Int = 1
     var numPersonas: Int = 0
 
+    // Step 4 data - lectura y censo hidraulico
+    var lecturaActual: String = ""
+
     // Step 4 data - censo hidraulico
     private val _censoItems = MutableLiveData<MutableList<HidraulicoEntity>>(mutableListOf())
     val censoItems: LiveData<MutableList<HidraulicoEntity>> = _censoItems
@@ -60,6 +63,7 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
     private val _fotos = MutableLiveData<MutableList<String>>(mutableListOf())
     val fotos: LiveData<MutableList<String>> = _fotos
     var firmaClientePath: String? = null
+    var actaPdfPath: String? = null
 
     // Save result
     sealed class SaveResult {
@@ -108,14 +112,55 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
 
     fun guardarFirma(bitmap: Bitmap) {
         viewModelScope.launch(Dispatchers.IO) {
-            val dir = File(getApplication<Application>().filesDir, "firmas")
-            dir.mkdirs()
-            val file = File(dir, "firma_cliente_${System.currentTimeMillis()}.png")
-            FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-            }
-            firmaClientePath = file.absolutePath
+            guardarFirmaBlocking(bitmap)
         }
+    }
+
+    fun guardarFirmaBlocking(bitmap: Bitmap) {
+        val dir = File(getApplication<Application>().filesDir, "firmas")
+        dir.mkdirs()
+        val file = File(dir, "firma_cliente_${System.currentTimeMillis()}.png")
+        FileOutputStream(file).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+        firmaClientePath = file.absolutePath
+    }
+
+    fun generarActaPdf(firmaCliente: Bitmap?) {
+        val currentOrden = _orden.value ?: return
+        val context = getApplication<Application>()
+        val sessionManager = SessionManager(context)
+        val censo = _censoItems.value ?: emptyList()
+
+        val actaData = com.systemapp.daily.ui.revision.ActaPdfGenerator.ActaData(
+            empresa = sessionManager.userEmpresa ?: "N/A",
+            refMedidor = currentOrden.codigoPredio,
+            suscriptor = nombreAtiende.ifBlank { null },
+            direccion = null,
+            medidorNombre = currentOrden.codigoPredio,
+            checklistItems = emptyList(),
+            observacion = buildString {
+                if (estadoAcometida.isNotBlank()) append("Acometida: $estadoAcometida. ")
+                if (estadoSellos.isNotBlank()) append("Sellos: $estadoSellos. ")
+                if (generalidades.isNotBlank()) append(generalidades)
+                if (lecturaActual.isNotBlank()) append(" Lectura: $lecturaActual.")
+                if (censo.isNotEmpty()) {
+                    append(" Censo: ")
+                    append(censo.joinToString(", ") { "${it.tipoPunto} x${it.cantidad} (${it.estado})" })
+                }
+            }.ifBlank { null },
+            latitud = gpsLatitud,
+            longitud = gpsLongitud,
+            usuario = sessionManager.userName ?: sessionManager.userUsuario ?: "Inspector",
+            firmaUsuario = null,
+            firmaCliente = firmaCliente
+        )
+
+        try {
+            val generator = com.systemapp.daily.ui.revision.ActaPdfGenerator(context)
+            val pdfFile = generator.generarActaPdf(actaData)
+            actaPdfPath = pdfFile.absolutePath
+        } catch (_: Exception) { }
     }
 
     fun finalizar() {
@@ -143,6 +188,8 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
                 rutaFotos = fotoPaths.joinToString(","),
                 gpsLatitudPredio = gpsLatitud,
                 gpsLongitudPredio = gpsLongitud,
+                lecturaActual = lecturaActual.ifBlank { null },
+                actaPdfPath = actaPdfPath,
                 fechaCierre = dateTimeFormat.format(Date()),
                 sincronizado = false
             )
@@ -180,8 +227,16 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
                         mapOf("tipo_punto" to it.tipoPunto, "cantidad" to it.cantidad, "estado" to it.estado)
                     })
 
-                    val response = api.enviarRevisionV2(
+                    // Generate acta PDF if firma exists
+                    val actaPdfPart = actaPdfPath?.let { path ->
+                        val file = File(path)
+                        if (file.exists()) {
+                            val req = file.asRequestBody("application/pdf".toMediaTypeOrNull())
+                            MultipartBody.Part.createFormData("acta_pdf", file.name, req)
+                        } else null
+                    }
 
+                    val response = api.enviarRevisionV2(
                         idOrden = currentOrden.idOrden.toString().toRequestBody(textPlain),
                         codigoPredio = currentOrden.codigoPredio.toRequestBody(textPlain),
                         estadoAcometida = estadoAcometida.ifBlank { null }?.toRequestBody(textPlain),
@@ -195,11 +250,12 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
                         motivoDetalle = motivoDetalle.ifBlank { null }?.toRequestBody(textPlain),
                         generalidades = generalidades.ifBlank { null }?.toRequestBody(textPlain),
                         censoHidraulicoJson = censoJson.toRequestBody(textPlain),
+                        lecturaActual = lecturaActual.ifBlank { null }?.toRequestBody(textPlain),
                         gpsLatitud = gpsLatitud?.toString()?.toRequestBody(textPlain),
                         gpsLongitud = gpsLongitud?.toString()?.toRequestBody(textPlain),
                         fotos = fotoParts,
                         firmaCliente = firmaPart,
-                        actaPdf = null,
+                        actaPdf = actaPdfPart,
                     )
                     if (response.isSuccessful && response.body()?.success == true) {
                         ordenRevisionDao.marcarSincronizado(currentOrden.idOrden)
@@ -212,10 +268,10 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
 
             // 3. Queue for sync
             val ahora = dateTimeFormat.format(Date())
-            val existente = syncQueueDao.buscarPorRegistro(TipoSync.REVISION, currentOrden.idOrden)
+            val existente = syncQueueDao.buscarPorRegistro(TipoSync.REVISION_V2, currentOrden.idOrden)
             if (existente == null) {
                 syncQueueDao.insert(SyncQueueEntity(
-                    tipo = TipoSync.REVISION,
+                    tipo = TipoSync.REVISION_V2,
                     registroId = currentOrden.idOrden,
                     estado = EstadoSync.PENDIENTE,
                     fechaCreacion = ahora
@@ -260,7 +316,7 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
     }
 
     suspend fun getSyncStatus(idOrden: Int): String? {
-        return syncQueueDao.getEstadoSync(TipoSync.REVISION, idOrden)
+        return syncQueueDao.getEstadoSync(TipoSync.REVISION_V2, idOrden)
     }
 
     fun retomarRevision(idOrden: Int) {

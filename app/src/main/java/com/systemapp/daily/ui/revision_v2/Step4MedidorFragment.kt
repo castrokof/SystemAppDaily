@@ -36,6 +36,11 @@ class Step4MedidorFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Lectura del medidor
+        if (viewModel.lecturaActual.isNotBlank()) {
+            binding.etLecturaActual.setText(viewModel.lecturaActual)
+        }
+
         censoAdapter = CensoAdapter { index ->
             AlertDialog.Builder(requireContext())
                 .setTitle("Eliminar")
@@ -56,6 +61,11 @@ class Step4MedidorFragment : Fragment() {
         binding.btnAgregarPunto.setOnClickListener {
             mostrarDialogoAgregarPunto()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.lecturaActual = binding.etLecturaActual.text?.toString()?.trim() ?: ""
     }
 
     private fun mostrarDialogoAgregarPunto() {

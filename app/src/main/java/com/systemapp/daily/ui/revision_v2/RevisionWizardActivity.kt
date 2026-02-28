@@ -6,12 +6,16 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.systemapp.daily.R
 import com.systemapp.daily.databinding.ActivityRevisionWizardBinding
 import com.systemapp.daily.utils.Constants
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class RevisionWizardActivity : AppCompatActivity() {
 
@@ -58,9 +62,20 @@ class RevisionWizardActivity : AppCompatActivity() {
             }
         }
 
-        // Setup TabLayout con los nombres de pasos
-        for (name in stepNames) {
-            binding.tabLayoutSteps.addTab(binding.tabLayoutSteps.newTab().setText(name))
+        // Setup TabLayout con los nombres de pasos e iconos
+        val stepIcons = listOf(
+            R.drawable.ic_person,
+            R.drawable.ic_location,
+            R.drawable.ic_family,
+            R.drawable.ic_meter,
+            R.drawable.ic_check_circle
+        )
+        for ((index, name) in stepNames.withIndex()) {
+            binding.tabLayoutSteps.addTab(
+                binding.tabLayoutSteps.newTab()
+                    .setText(name)
+                    .setIcon(stepIcons[index])
+            )
         }
 
         // Click en tab navega al paso
@@ -91,8 +106,22 @@ class RevisionWizardActivity : AppCompatActivity() {
                 binding.tabLayoutSteps.selectTab(binding.tabLayoutSteps.getTabAt(current + 1))
                 updateStepUI(current + 1)
             } else {
-                // Step 5: Finalizar
-                viewModel.finalizar()
+                // Step 5: Save firma + generate PDF on IO, then finalizar
+                val step5 = supportFragmentManager.fragments
+                    .filterIsInstance<Step5FinalizarFragment>()
+                    .firstOrNull()
+                // Get firma bitmap on main thread (UI access)
+                val firmaBitmap = step5?.obtenerFirmaBitmap()
+                lifecycleScope.launch {
+                    if (firmaBitmap != null) {
+                        withContext(Dispatchers.IO) {
+                            viewModel.guardarFirmaBlocking(firmaBitmap)
+                            viewModel.generarActaPdf(firmaBitmap)
+                            firmaBitmap.recycle()
+                        }
+                    }
+                    viewModel.finalizar()
+                }
             }
         }
 
@@ -108,13 +137,15 @@ class RevisionWizardActivity : AppCompatActivity() {
                     Snackbar.make(binding.root, result.message, Snackbar.LENGTH_SHORT)
                         .setBackgroundTint(getColor(R.color.success))
                         .show()
-                    binding.root.postDelayed({ finish() }, 1500)
+                    binding.btnSiguiente.text = "Cerrar"
+                    binding.btnSiguiente.setOnClickListener { finish() }
                 }
                 is RevisionWizardViewModel.SaveResult.SavedLocal -> {
                     Snackbar.make(binding.root, result.message, Snackbar.LENGTH_LONG)
                         .setBackgroundTint(getColor(R.color.warning))
                         .show()
-                    binding.root.postDelayed({ finish() }, 2000)
+                    binding.btnSiguiente.text = "Cerrar"
+                    binding.btnSiguiente.setOnClickListener { finish() }
                 }
                 is RevisionWizardViewModel.SaveResult.Error -> {
                     Snackbar.make(binding.root, result.message, Snackbar.LENGTH_LONG)

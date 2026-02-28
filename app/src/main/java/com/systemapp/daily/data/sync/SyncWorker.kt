@@ -33,6 +33,8 @@ class SyncWorker(
     private val lecturaDao = db.lecturaDao()
     private val revisionDao = db.revisionDao()
     private val macroDao = db.macroDao()
+    private val ordenRevisionDao = db.ordenRevisionDao()
+    private val hidraulicoDao = db.hidraulicoDao()
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
     override suspend fun doWork(): Result {
@@ -56,6 +58,7 @@ class SyncWorker(
             val exito = when (item.tipo) {
                 TipoSync.LECTURA -> enviarLectura(api, item.registroId)
                 TipoSync.REVISION -> enviarRevision(api, item.registroId)
+                TipoSync.REVISION_V2 -> enviarRevisionV2(api, item.registroId)
                 TipoSync.MACRO -> enviarMacro(api, item.registroId)
                 else -> false
             }
@@ -150,6 +153,80 @@ class SyncWorker(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error enviando revisión $revisionId: ${e.message}")
+            false
+        }
+    }
+
+    private suspend fun enviarRevisionV2(api: ApiService, idOrden: Int): Boolean {
+        return try {
+            val revision = ordenRevisionDao.getById(idOrden) ?: return false
+            val censo = hidraulicoDao.getByRevision(idOrden)
+
+            val textPlain = "text/plain".toMediaTypeOrNull()
+
+            // Photos
+            val fotoPaths = revision.rutaFotos?.split(",")?.filter { it.isNotBlank() && !it.endsWith(".pdf") } ?: emptyList()
+            val fotoParts = fotoPaths.mapIndexedNotNull { index, path ->
+                val file = File(path.trim())
+                if (file.exists()) {
+                    val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("fotos[$index]", file.name, requestFile)
+                } else null
+            }
+
+            // Firma
+            val firmaPart = revision.firmaCliente?.let { path ->
+                val file = File(path)
+                if (file.exists()) {
+                    val req = file.asRequestBody("image/png".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("firma_cliente", file.name, req)
+                } else null
+            }
+
+            // Acta PDF
+            val actaPdfPart = revision.actaPdfPath?.let { path ->
+                val file = File(path)
+                if (file.exists()) {
+                    val req = file.asRequestBody("application/pdf".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("acta_pdf", file.name, req)
+                } else null
+            }
+
+            // Censo JSON
+            val censoJson = com.google.gson.Gson().toJson(censo.map {
+                mapOf("tipo_punto" to it.tipoPunto, "cantidad" to it.cantidad, "estado" to it.estado)
+            })
+
+            val response = api.enviarRevisionV2(
+                idOrden = revision.idOrden.toString().toRequestBody(textPlain),
+                codigoPredio = revision.codigoPredio.toRequestBody(textPlain),
+                estadoAcometida = revision.estadoAcometida?.toRequestBody(textPlain),
+                estadoSellos = revision.estadoSellos?.toRequestBody(textPlain),
+                nombreAtiende = revision.nombreAtiende?.toRequestBody(textPlain),
+                tipoDocumento = revision.tipoDocumento?.toRequestBody(textPlain),
+                documento = revision.documento?.toRequestBody(textPlain),
+                numFamilias = revision.numFamilias?.toString()?.toRequestBody(textPlain),
+                numPersonas = revision.numPersonas?.toString()?.toRequestBody(textPlain),
+                motivoRevision = revision.motivoRevision?.toRequestBody(textPlain),
+                motivoDetalle = revision.motivoDetalle?.toRequestBody(textPlain),
+                generalidades = revision.generalidades?.toRequestBody(textPlain),
+                censoHidraulicoJson = censoJson.toRequestBody(textPlain),
+                lecturaActual = revision.lecturaActual?.toRequestBody(textPlain),
+                gpsLatitud = revision.gpsLatitudPredio?.toString()?.toRequestBody(textPlain),
+                gpsLongitud = revision.gpsLongitudPredio?.toString()?.toRequestBody(textPlain),
+                fotos = fotoParts,
+                firmaCliente = firmaPart,
+                actaPdf = actaPdfPart
+            )
+
+            if (response.isSuccessful && response.body()?.success == true) {
+                ordenRevisionDao.marcarSincronizado(idOrden)
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error enviando revisión V2 $idOrden: ${e.message}")
             false
         }
     }

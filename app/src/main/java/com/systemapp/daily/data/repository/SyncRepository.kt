@@ -84,11 +84,12 @@ class SyncRepository(private val context: Context, private val apiToken: String)
                         motivoDetalle = revision.motivoDetalle?.toRequestBody(textPlain),
                         generalidades = revision.generalidades?.toRequestBody(textPlain),
                         censoHidraulicoJson = null,
+                        lecturaActual = revision.lecturaActual?.toRequestBody(textPlain),
                         gpsLatitud = revision.gpsLatitudPredio?.toString()?.toRequestBody(textPlain),
                         gpsLongitud = revision.gpsLongitudPredio?.toString()?.toRequestBody(textPlain),
                         fotos = fotoParts,
                         firmaCliente = firmaPart,
-                        actaPdf = null
+                        actaPdf = buildFilePart("acta_pdf", revision.actaPdfPath)
                     )
                     if (response.isSuccessful && response.body()?.success == true) {
                         ordenRevisionDao.marcarSincronizado(revision.idOrden)

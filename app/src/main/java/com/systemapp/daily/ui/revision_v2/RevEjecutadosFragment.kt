@@ -107,11 +107,16 @@ class RevEjecutadosFragment : Fragment() {
     }
 
     private fun setupDragAndDrop() {
-        val dragHelper = RevDragHelper(adapter)
+        val dragHelper = RevDragHelper(adapter) {
+            // Al soltar: guardar el nuevo orden en la BD
+            val reordered = adapter.getItems().map { it.revision }
+            viewModel.guardarOrdenManual(reordered)
+        }
         itemTouchHelper = ItemTouchHelper(dragHelper)
         itemTouchHelper?.attachToRecyclerView(binding.rvOrdenes)
 
         adapter.onStartDrag = { holder ->
+            currentSort = SortOption.MANUAL
             itemTouchHelper?.startDrag(holder)
         }
     }

@@ -17,7 +17,7 @@ import com.systemapp.daily.data.model.*
         ListaEntity::class,
         SyncQueueEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -65,6 +65,9 @@ data class RevisionEntity(
     @ColumnInfo(name = "acta_pdf_path")
     val actaPdfPath: String? = null,
 
+    @ColumnInfo(name = "orden_manual", defaultValue = "0")
+    val ordenManual: Int = 0,
+
     val sincronizado: Boolean = false
 )
 

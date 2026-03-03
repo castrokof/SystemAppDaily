@@ -16,10 +16,10 @@ interface OrdenRevisionDao {
     @Update
     suspend fun update(revision: RevisionEntity)
 
-    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'PENDIENTE' ORDER BY id_orden ASC")
+    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'PENDIENTE' ORDER BY orden_manual ASC, id_orden ASC")
     fun getPendientes(): Flow<List<RevisionEntity>>
 
-    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'EJECUTADO' ORDER BY fecha_cierre DESC")
+    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'EJECUTADO' ORDER BY orden_manual ASC, fecha_cierre DESC")
     fun getEjecutados(): Flow<List<RevisionEntity>>
 
     @Query("SELECT * FROM ordenes_revision WHERE id_orden = :idOrden LIMIT 1")
@@ -43,11 +43,14 @@ interface OrdenRevisionDao {
     @Query("SELECT * FROM ordenes_revision WHERE codigo_predio LIKE '%' || :query || '%'")
     fun buscar(query: String): Flow<List<RevisionEntity>>
 
-    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'PENDIENTE' AND (codigo_predio LIKE '%' || :query || '%' OR motivo_revision LIKE '%' || :query || '%' OR nombre_atiende LIKE '%' || :query || '%') ORDER BY id_orden ASC")
+    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'PENDIENTE' AND (codigo_predio LIKE '%' || :query || '%' OR motivo_revision LIKE '%' || :query || '%' OR nombre_atiende LIKE '%' || :query || '%') ORDER BY orden_manual ASC, id_orden ASC")
     fun buscarPendientes(query: String): Flow<List<RevisionEntity>>
 
-    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'EJECUTADO' AND (codigo_predio LIKE '%' || :query || '%' OR motivo_revision LIKE '%' || :query || '%' OR nombre_atiende LIKE '%' || :query || '%') ORDER BY fecha_cierre DESC")
+    @Query("SELECT * FROM ordenes_revision WHERE estado_orden = 'EJECUTADO' AND (codigo_predio LIKE '%' || :query || '%' OR motivo_revision LIKE '%' || :query || '%' OR nombre_atiende LIKE '%' || :query || '%') ORDER BY orden_manual ASC, fecha_cierre DESC")
     fun buscarEjecutados(query: String): Flow<List<RevisionEntity>>
+
+    @Query("UPDATE ordenes_revision SET orden_manual = :orden WHERE id_orden = :idOrden")
+    suspend fun actualizarOrden(idOrden: Int, orden: Int)
 
     @Query("UPDATE ordenes_revision SET estado_orden = 'PENDIENTE', fecha_cierre = NULL, sincronizado = 0 WHERE id_orden = :idOrden")
     suspend fun retomar(idOrden: Int)

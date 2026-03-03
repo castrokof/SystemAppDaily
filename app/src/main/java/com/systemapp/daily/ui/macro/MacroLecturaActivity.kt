@@ -103,6 +103,7 @@ class MacroLecturaActivity : AppCompatActivity() {
     companion object {
         private const val STATE_CURRENT_PHOTO_PATH = "state_current_photo_path"
         private const val STATE_AUTO_FOTO_MODE = "state_auto_foto_mode"
+        private const val STATE_FOTO_PATHS = "state_foto_paths"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,6 +123,11 @@ class MacroLecturaActivity : AppCompatActivity() {
         savedInstanceState?.let {
             currentPhotoPath = it.getString(STATE_CURRENT_PHOTO_PATH)
             autoFotoMode = it.getBoolean(STATE_AUTO_FOTO_MODE, false)
+            // Restaurar fotos si el ViewModel fue destruido (process death)
+            val savedFotos = it.getStringArrayList(STATE_FOTO_PATHS)
+            if (savedFotos != null && (viewModel.fotos.value.isNullOrEmpty())) {
+                savedFotos.forEach { path -> viewModel.agregarFoto(path) }
+            }
         }
 
         setupUI()
@@ -135,6 +141,8 @@ class MacroLecturaActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         outState.putString(STATE_CURRENT_PHOTO_PATH, currentPhotoPath)
         outState.putBoolean(STATE_AUTO_FOTO_MODE, autoFotoMode)
+        // Guardar fotos como respaldo por si el ViewModel se pierde
+        outState.putStringArrayList(STATE_FOTO_PATHS, ArrayList(viewModel.fotos.value ?: emptyList()))
     }
 
     private fun setupUI() {

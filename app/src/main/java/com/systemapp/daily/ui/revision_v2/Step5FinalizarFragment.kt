@@ -85,6 +85,11 @@ class Step5FinalizarFragment : Fragment() {
 
         savedInstanceState?.let {
             currentPhotoPath = it.getString("current_photo_path")
+            // Restaurar fotos si el ViewModel fue destruido (process death)
+            val savedFotos = it.getStringArrayList("foto_paths_backup")
+            if (savedFotos != null && (viewModel.fotos.value.isNullOrEmpty())) {
+                savedFotos.forEach { path -> viewModel.agregarFoto(path) }
+            }
         }
 
         fotoAdapter = FotoAdapter(mutableListOf()) { index -> viewModel.eliminarFoto(index) }
@@ -134,6 +139,7 @@ class Step5FinalizarFragment : Fragment() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString("current_photo_path", currentPhotoPath)
+        outState.putStringArrayList("foto_paths_backup", ArrayList(viewModel.fotos.value ?: emptyList()))
     }
 
     private fun checkCameraPermissionAndOpen() {

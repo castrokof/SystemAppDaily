@@ -9,7 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
  * Permite reordenar items arrastrando desde el drag handle.
  */
 class RevDragHelper(
-    private val adapter: RevOrdenAdapter
+    private val adapter: RevOrdenAdapter,
+    private val onOrderChanged: (() -> Unit)? = null
 ) : ItemTouchHelper.Callback() {
 
     override fun getMovementFlags(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
@@ -53,5 +54,7 @@ class RevDragHelper(
             elevation = 0f
             setBackgroundColor(Color.TRANSPARENT)
         }
+        // Al soltar el item, persistir el nuevo orden
+        onOrderChanged?.invoke()
     }
 }

@@ -324,4 +324,12 @@ class RevisionWizardViewModel(application: Application) : AndroidViewModel(appli
             ordenRevisionDao.retomar(idOrden)
         }
     }
+
+    fun guardarOrdenManual(items: List<RevisionEntity>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            items.forEachIndexed { index, rev ->
+                ordenRevisionDao.actualizarOrden(rev.idOrden, index)
+            }
+        }
+    }
 }

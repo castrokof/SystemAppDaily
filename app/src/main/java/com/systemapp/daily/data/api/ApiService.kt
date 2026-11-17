@@ -31,7 +31,7 @@ interface ApiService {
     suspend fun getOrdenesMacro(): Response<List<MacroEntity>>
 
     @GET("ordenesRevision")
-    suspend fun getOrdenesRevision(): Response<List<RevisionEntity>>
+    suspend fun getOrdenesRevision(): Response<List<RevisionDto>>
 
     @GET("listasParametros")
     suspend fun getListasParametros(): Response<List<ListaEntity>>
@@ -85,28 +85,16 @@ interface ApiService {
         // ✅ ELIMINAR: apiToken: RequestBody
     ): Response<RevisionResponse>
 
+    /**
+     * Revisión ejecutada (Formato C). Los campos de texto van en [campos]
+     * (id_orden, codigo_predio, tipo_predio, uso_predio, causas_consumo_json, ...) y los
+     * archivos en [archivos] (fotos[i], firma_cliente, firma_funcionario, acta_pdf).
+     * Ver RevisionUploader.
+     */
     @Multipart
     @POST("revisionesMovilV2")
     suspend fun enviarRevisionV2(
-        @Part("id_orden") idOrden: RequestBody,
-        @Part("codigo_predio") codigoPredio: RequestBody,
-        @Part("estado_acometida") estadoAcometida: RequestBody?,
-        @Part("estado_sellos") estadoSellos: RequestBody?,
-        @Part("nombre_atiende") nombreAtiende: RequestBody?,
-        @Part("tipo_documento") tipoDocumento: RequestBody?,
-        @Part("documento") documento: RequestBody?,
-        @Part("num_familias") numFamilias: RequestBody?,
-        @Part("num_personas") numPersonas: RequestBody?,
-        @Part("motivo_revision") motivoRevision: RequestBody?,
-        @Part("motivo_detalle") motivoDetalle: RequestBody?,
-        @Part("generalidades") generalidades: RequestBody?,
-        @Part("censo_hidraulico_json") censoHidraulicoJson: RequestBody?,
-        @Part("lectura_actual") lecturaActual: RequestBody?,
-        @Part("gps_latitud") gpsLatitud: RequestBody?,
-        @Part("gps_longitud") gpsLongitud: RequestBody?,
-        @Part fotos: List<MultipartBody.Part>,
-        @Part firmaCliente: MultipartBody.Part?,
-        @Part actaPdf: MultipartBody.Part?
-        // ✅ ELIMINAR: apiToken: RequestBody
+        @PartMap campos: Map<String, @JvmSuppressWildcards RequestBody>,
+        @Part archivos: List<MultipartBody.Part>
     ): Response<SyncResponse>
 }

@@ -19,6 +19,7 @@ object Constants {
     const val PREF_PRINTER_NAME = "printer_name"
     const val PREF_PRINTER_ADDRESS = "printer_address"
     const val PREF_LAST_SYNC = "last_sync_date"
+    const val PREF_ANCHO_PAPEL = "ancho_papel_mm"
 
     // Intent extras
     const val EXTRA_MACRO_ID = "extra_macro_id"

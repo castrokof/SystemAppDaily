@@ -244,6 +244,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun confirmarBorrarDatos() {
+        lifecycleScope.launch {
+            val db = AppDatabase.getDatabase(this@MainActivity)
+            val sinEnviar = db.ordenRevisionDao().getPendientesSincronizar().size + db.macroDao().getPendientesSincronizar().size
+            if (sinEnviar > 0) {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("No se puede borrar")
+                    .setMessage("Hay $sinEnviar registro(s) ejecutados que aún no se han enviado al servidor. Sincronice primero para no perderlos.")
+                    .setPositiveButton("Sincronizar ahora") { _, _ -> ejecutarSincronizacion() }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            } else mostrarConfirmacionBorrado()
+        }
+    }
+
+    private fun mostrarConfirmacionBorrado() {
         AlertDialog.Builder(this)
             .setTitle(R.string.borrar_datos_titulo)
             .setMessage(R.string.borrar_datos_mensaje)

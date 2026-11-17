@@ -4,6 +4,7 @@ import android.content.Context
 import com.systemapp.daily.data.api.RetrofitClient
 import com.systemapp.daily.data.local.AppDatabase
 import com.systemapp.daily.data.model.SyncResult
+import com.systemapp.daily.data.sync.RevisionUploader
 import com.systemapp.daily.utils.NetworkResult
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -60,46 +61,13 @@ class SyncRepository(private val context: Context, private val apiToken: String)
             errores.add("Error subiendo macros: ${e.localizedMessage}")
         }
 
-        // 2. Subir revisiones pendientes
+        // 2. Subir revisiones pendientes (mismo envío que el wizard y el worker)
         try {
-            val revisionesPendientes = ordenRevisionDao.getPendientesSincronizar()
-            for (revision in revisionesPendientes) {
-                try {
-                    val textPlain = "text/plain".toMediaTypeOrNull()
-                    val fotoParts = buildFotoParts(revision.rutaFotos)
-                    val firmaPart = buildFilePart("firma_cliente", revision.firmaCliente)
-
-                    val response = api.enviarRevisionV2(
-
-                        idOrden = revision.idOrden.toString().toRequestBody(textPlain),
-                        codigoPredio = revision.codigoPredio.toRequestBody(textPlain),
-                        estadoAcometida = revision.estadoAcometida?.toRequestBody(textPlain),
-                        estadoSellos = revision.estadoSellos?.toRequestBody(textPlain),
-                        nombreAtiende = revision.nombreAtiende?.toRequestBody(textPlain),
-                        tipoDocumento = revision.tipoDocumento?.toRequestBody(textPlain),
-                        documento = revision.documento?.toRequestBody(textPlain),
-                        numFamilias = revision.numFamilias?.toString()?.toRequestBody(textPlain),
-                        numPersonas = revision.numPersonas?.toString()?.toRequestBody(textPlain),
-                        motivoRevision = revision.motivoRevision?.toRequestBody(textPlain),
-                        motivoDetalle = revision.motivoDetalle?.toRequestBody(textPlain),
-                        generalidades = revision.generalidades?.toRequestBody(textPlain),
-                        censoHidraulicoJson = null,
-                        lecturaActual = revision.lecturaActual?.toRequestBody(textPlain),
-                        gpsLatitud = revision.gpsLatitudPredio?.toString()?.toRequestBody(textPlain),
-                        gpsLongitud = revision.gpsLongitudPredio?.toString()?.toRequestBody(textPlain),
-                        fotos = fotoParts,
-                        firmaCliente = firmaPart,
-                        actaPdf = buildFilePart("acta_pdf", revision.actaPdfPath)
-                    )
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        ordenRevisionDao.marcarSincronizado(revision.idOrden)
-                        revisionesSubidas++
-                    } else {
-                        errores.add("Revisión ${revision.codigoPredio}: ${response.body()?.message ?: "Error"}")
-                    }
-                } catch (e: Exception) {
-                    errores.add("Revisión ${revision.codigoPredio}: ${e.localizedMessage}")
-                }
+            val uploader = RevisionUploader(context, api)
+            for (revision in ordenRevisionDao.getPendientesSincronizar()) {
+                val error = uploader.enviar(revision.idOrden)
+                if (error == null) revisionesSubidas++
+                else errores.add("Revisión ${revision.numeroVisible}: $error")
             }
         } catch (e: Exception) {
             errores.add("Error subiendo revisiones: ${e.localizedMessage}")
@@ -125,11 +93,8 @@ class SyncRepository(private val context: Context, private val apiToken: String)
         try {
             val response = api.getOrdenesRevision()
             if (response.isSuccessful) {
-                val revisiones = response.body() ?: emptyList()
-                if (revisiones.isNotEmpty()) {
-                    ordenRevisionDao.insertAll(revisiones)
-                    revisionesDescargadas = revisiones.size
-                }
+                // Nunca pisa revisiones ya trabajadas en el teléfono (ver guardarDescarga)
+                revisionesDescargadas = ordenRevisionDao.guardarDescarga(response.body() ?: emptyList())
             } else {
                 errores.add("Error descargando revisiones: ${response.code()}")
             }
@@ -190,9 +155,7 @@ class SyncRepository(private val context: Context, private val apiToken: String)
         try {
             val revResponse = api.getOrdenesRevision()
             if (revResponse.isSuccessful) {
-                val revisiones = revResponse.body() ?: emptyList()
-                ordenRevisionDao.insertAll(revisiones)
-                revisionesDescargadas = revisiones.size
+                revisionesDescargadas = ordenRevisionDao.guardarDescarga(revResponse.body() ?: emptyList())
             }
         } catch (e: Exception) {
             errores.add("Revisiones: ${e.localizedMessage}")

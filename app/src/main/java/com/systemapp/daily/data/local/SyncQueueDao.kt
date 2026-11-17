@@ -39,4 +39,14 @@ interface SyncQueueDao {
 
     @Query("SELECT estado FROM sync_queue WHERE tipo = :tipo AND registro_id = :registroId LIMIT 1")
     suspend fun getEstadoSync(tipo: String, registroId: Int): String?
+
+    /** Estados de todos los registros de un tipo en una sola consulta (para listas). */
+    @Query("SELECT registro_id AS registroId, estado, error_mensaje AS errorMensaje FROM sync_queue WHERE tipo = :tipo")
+    fun observarEstados(tipo: String): Flow<List<EstadoRegistroSync>>
+
+    /** Vuelve a dejar en cola un registro (p. ej. revisión re-finalizada). */
+    @Query("UPDATE sync_queue SET estado = 'PENDIENTE', intentos = 0, error_mensaje = NULL WHERE id = :id")
+    suspend fun reencolar(id: Int)
 }
+
+data class EstadoRegistroSync(val registroId: Int, val estado: String, val errorMensaje: String?)

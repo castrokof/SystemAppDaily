@@ -7,7 +7,7 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="3dp"
+    app:cardElevation="2dp"
     android:clickable="true"
     android:focusable="true">
 
@@ -17,7 +17,13 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <!-- Drag handle para reordenar (estilo jQuery Sortable) -->
+        <!-- Barra de color: rojo = alto consumo, azul = bajo consumo -->
+        <View
+            android:id="@+id/vTipoConsumo"
+            android:layout_width="5dp"
+            android:layout_height="match_parent"
+            android:background="@color/divider" />
+
         <ImageView
             android:id="@+id/ivDragHandle"
             android:layout_width="32dp"
@@ -28,13 +34,15 @@
             android:scaleType="center"
             android:background="?attr/selectableItemBackgroundBorderless" />
 
-        <!-- Contenido del item -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:padding="14dp">
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:paddingEnd="14dp"
+            android:paddingStart="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -47,7 +55,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary" />
 
@@ -55,8 +63,9 @@
                     android:id="@+id/tvSyncIcon"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="16sp"
-                    android:layout_marginEnd="8dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="6dp"
                     android:visibility="gone" />
 
                 <TextView
@@ -77,19 +86,40 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:textSize="14sp"
-                android:textColor="@color/text_primary" />
+                android:textSize="15sp"
+                android:textColor="@color/text_primary"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-            <View
+            <TextView
+                android:id="@+id/tvDireccion"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="8dp"
-                android:background="@color/divider" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:maxLines="2"
+                android:ellipsize="end" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvTipoConsumo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp"
+                    android:background="@drawable/bg_rounded_badge"
+                    android:textColor="@android:color/white"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tvNombreAtiende"

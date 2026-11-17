@@ -113,7 +113,14 @@
         <activity
             android:name=".ui.revision_v2.RevisionWizardActivity"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait" />
+
+        <!-- Firma del usuario a pantalla completa (horizontal) -->
+        <activity
+            android:name=".ui.revision_v2.FirmaClienteActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape" />
 
         <!-- FileProvider para compartir fotos -->
         <provider

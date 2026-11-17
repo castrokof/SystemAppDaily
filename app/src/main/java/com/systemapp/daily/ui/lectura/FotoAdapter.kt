@@ -49,7 +49,8 @@ class FotoAdapter(
                 .into(ivFoto)
 
             btnDelete.setOnClickListener {
-                onDeleteClick(position)
+                val pos = bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) onDeleteClick(pos)
             }
         }
     }

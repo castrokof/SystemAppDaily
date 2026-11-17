@@ -2,6 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -15,66 +16,199 @@
         app:subtitleTextColor="@android:color/white"
         app:navigationIconTint="@android:color/white" />
 
-    <!-- TabLayout clickeable para navegar entre pasos -->
+    <!-- Encabezado fijo del Formato C (datos precargados). Toque para contraer/expandir. -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardEncabezado"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="2dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvEncNumero"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvEncTipoConsumo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_badge"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="3dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/ivEncExpandir"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="Expandir encabezado"
+                    android:src="@android:drawable/arrow_up_float"
+                    app:tint="@color/text_secondary" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvEncNombre"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/layoutEncDetalle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvEncCodigo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvEncDireccion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvEncLectActual"
+                        style="@style/EncabezadoDato"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/tvEncLectAnterior"
+                        style="@style/EncabezadoDato"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/tvEncConsumo"
+                        style="@style/EncabezadoDato"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/tvEncPromedio"
+                        style="@style/EncabezadoDato"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/tvBannerSoloLectura"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/success"
+        android:gravity="center"
+        android:padding="6dp"
+        android:textColor="@android:color/white"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayoutSteps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/primary"
-        app:tabTextColor="#B0FFFFFF"
-        app:tabSelectedTextColor="@android:color/white"
+        app:tabGravity="fill"
         app:tabIndicatorColor="@android:color/white"
         app:tabIndicatorHeight="3dp"
-        app:tabMode="scrollable"
-        app:tabGravity="fill"
+        app:tabInlineLabel="true"
         app:tabMinWidth="0dp"
-        app:tabPaddingStart="8dp"
-        app:tabPaddingEnd="8dp" />
+        app:tabMode="scrollable"
+        app:tabPaddingEnd="10dp"
+        app:tabPaddingStart="10dp"
+        app:tabSelectedTextColor="@android:color/white"
+        app:tabIconTint="@android:color/white"
+        app:tabTextColor="#B0FFFFFF" />
 
     <ProgressBar
         android:id="@+id/progressSteps"
-        android:layout_width="match_parent"
-        android:layout_height="6dp"
         style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
         android:max="5"
         android:progress="1"
-        android:progressTint="@color/primary" />
+        android:progressTint="@color/accent" />
 
-    <!-- ViewPager2 -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- Navigation Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
         android:background="@color/surface"
-        android:elevation="8dp">
+        android:elevation="8dp"
+        android:orientation="horizontal"
+        android:padding="10dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAnterior"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="52dp"
+            android:layout_marginEnd="6dp"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
             android:text="Anterior"
-            android:visibility="invisible"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            android:visibility="invisible" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSiguiente"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="6dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
             android:text="Siguiente"
             app:cornerRadius="8dp" />
-
     </LinearLayout>
 
 </LinearLayout>

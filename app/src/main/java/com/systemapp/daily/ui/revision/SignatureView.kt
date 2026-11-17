@@ -21,7 +21,7 @@ class SignatureView @JvmOverloads constructor(
         style = Paint.Style.STROKE
         strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
-        strokeWidth = 5f
+        strokeWidth = 7f // más grueso: se ve mejor en la térmica y en el PDF
     }
 
     private val path = Path()
@@ -49,11 +49,14 @@ class SignatureView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!isEnabled) return false // modo consulta: no firmar
         val x = event.x
         val y = event.y
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                // Evita que el ScrollView se desplace mientras se firma
+                parent?.requestDisallowInterceptTouchEvent(true)
                 path.moveTo(x, y)
                 hasSignature = true
                 return true
@@ -61,7 +64,8 @@ class SignatureView @JvmOverloads constructor(
             MotionEvent.ACTION_MOVE -> {
                 path.lineTo(x, y)
             }
-            MotionEvent.ACTION_UP -> {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                parent?.requestDisallowInterceptTouchEvent(false)
                 paths.add(Path(path))
                 path.reset()
             }
@@ -84,7 +88,7 @@ class SignatureView @JvmOverloads constructor(
      * Obtiene la firma como Bitmap.
      */
     fun getSignatureBitmap(): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(Color.WHITE)
         for (p in paths) {
@@ -92,5 +96,28 @@ class SignatureView @JvmOverloads constructor(
         }
         canvas.drawPath(path, paint)
         return bitmap
+    }
+
+    /**
+     * Firma recortada al área dibujada (con margen): así en el acta se ve grande y
+     * no como un trazo pequeño en medio de un recuadro blanco.
+     */
+    fun getSignatureBitmapRecortada(margen: Int = 24): Bitmap {
+        val completa = getSignatureBitmap()
+        val limites = RectF()
+        val r = RectF()
+        paths.forEachIndexed { i, p ->
+            p.computeBounds(r, true)
+            if (i == 0) limites.set(r) else limites.union(r)
+        }
+        if (paths.isEmpty()) return completa
+        val extra = margen + paint.strokeWidth
+        val izq = (limites.left - extra).toInt().coerceIn(0, completa.width - 1)
+        val arr = (limites.top - extra).toInt().coerceIn(0, completa.height - 1)
+        val der = (limites.right + extra).toInt().coerceIn(izq + 1, completa.width)
+        val aba = (limites.bottom + extra).toInt().coerceIn(arr + 1, completa.height)
+        val recorte = Bitmap.createBitmap(completa, izq, arr, der - izq, aba - arr)
+        if (recorte !== completa) completa.recycle()
+        return recorte
     }
 }

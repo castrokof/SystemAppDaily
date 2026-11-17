@@ -48,6 +48,11 @@ class SessionManager(context: Context) {
         get() = prefs.getString(Constants.PREF_PRINTER_ADDRESS, null)
         set(value) = prefs.edit().putString(Constants.PREF_PRINTER_ADDRESS, value).apply()
 
+    /** Ancho del papel de la impresora térmica: 58 u 80 (mm). */
+    var anchoPapelMm: Int
+        get() = prefs.getInt(Constants.PREF_ANCHO_PAPEL, 80)
+        set(value) = prefs.edit().putInt(Constants.PREF_ANCHO_PAPEL, value).apply()
+
     var lastSyncDate: String?
         get() = prefs.getString(Constants.PREF_LAST_SYNC, null)
         set(value) = prefs.edit().putString(Constants.PREF_LAST_SYNC, value).apply()
